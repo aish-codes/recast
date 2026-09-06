@@ -10,16 +10,38 @@ This whole file only works because the renderer is pure Python. With a headless
 browser in the dependency tree the bundle would be several hundred megabytes and
 no serverless function would take it.
 """
-import sys
-from pathlib import Path
+# import sys
+# from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
+# sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from fastapi import FastAPI
+# from fastapi import FastAPI
 
-from recast.api.main import api
+# from recast.api.main import api
 
-app = FastAPI(docs_url=None, redoc_url=None)
-app.mount("/api/py", api)
+# app = FastAPI(docs_url=None, redoc_url=None)
+# app.mount("/api/py", api)
 
-__all__ = ["app"]
+# __all__ = ["app"]
+import traceback
+
+try:
+    from fastapi import FastAPI
+    from recast.api.main import api
+
+    app = FastAPI(docs_url=None, redoc_url=None)
+    app.mount("/api/py", api)
+
+except Exception as e:
+    error = traceback.format_exc()
+    print("=== RECAST PYTHON STARTUP ERROR ===")
+    print(error)
+
+    from fastapi import FastAPI
+    from fastapi.responses import PlainTextResponse
+
+    app = FastAPI()
+
+    @app.get("/{path:path}", response_class=PlainTextResponse)
+    def startup_error(path: str):
+        return error
