@@ -5,3 +5,4 @@ data/jobs/
 *.mov
 .pytest_cache/
 .ruff_cache/
+.env

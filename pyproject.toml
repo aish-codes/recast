@@ -3,7 +3,7 @@ name = "recast"
 version = "0.1.0"
 description = "Tailor a master resume profile to a job description, deterministically and without hallucination."
 requires-python = ">=3.11"
-dependencies = [
+dependencies = ["psycopg[binary]>=3.2",
     "pydantic>=2.9",
     "openai>=1.55",            # used as an OpenAI-compatible client; points at Groq by default
     "python-dotenv>=1.0",
