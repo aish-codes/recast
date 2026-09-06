@@ -101,16 +101,34 @@ class PgStore:
     # --- applications --------------------------------------------------------
 
     def _upsert(self, user: str, job_id: str, **cols) -> None:
+        """Write some columns of one application, creating the row if it is new.
+
+        Update first, insert only if nothing was updated. `insert ... on conflict
+        do update` reads better and is wrong here: Postgres validates the proposed
+        row — NOT NULL included — *before* it looks for a conflict, so every
+        partial write except `save_job` (the only one that supplies `job`) fails
+        with a not-null violation on `job`, even when the row already exists and
+        the update branch is the one that would have run.
+
+        Both statements share one transaction, so a failing insert takes the
+        update with it and the row is never half-written.
+        """
         keys = list(cols)
-        sets = ", ".join(f"{k} = excluded.{k}" for k in keys)
+        assignments = ", ".join(f"{k} = %s" for k in keys)
         placeholders = ", ".join(["%s"] * len(keys))
-        sql = (
-            f"insert into applications (user_id, job_id, {', '.join(keys)}) "
-            f"values (%s, %s, {placeholders}) "
-            f"on conflict (user_id, job_id) do update set {sets}, updated = now()"
-        )
         with self._conn() as c:
-            c.execute(sql, [user, job_id, *cols.values()])
+            updated = c.execute(
+                f"update applications set {assignments}, updated = now() "
+                f"where user_id = %s and job_id = %s",
+                [*cols.values(), user, job_id],
+            ).rowcount
+            if updated:
+                return
+            c.execute(
+                f"insert into applications (user_id, job_id, {', '.join(keys)}) "
+                f"values (%s, %s, {placeholders})",
+                [user, job_id, *cols.values()],
+            )
 
     def save_job(self, jd: JobDescription, user: str) -> None:
         self._upsert(user, jd.id, company=jd.company, role=jd.role, job=_jsonb(jd))
