@@ -10,3 +10,6 @@ data/profiles/*.json
 data/jobs/*.txt
 data/jobs/*.md
 node_modules/
+.vercel
+.env*
+.next/
