@@ -10,6 +10,10 @@ This whole file only works because the renderer is pure Python. With a headless
 browser in the dependency tree the bundle would be several hundred megabytes and
 no serverless function would take it.
 """
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 from fastapi import FastAPI
 
