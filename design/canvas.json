@@ -1,0 +1,17 @@
+{
+  "artboards": [
+    { "file": "Main.dc.html",          "x": 0,    "y": 0,    "w": 1440, "h": 4200, "title": "01 · Landing page", "print": "flow" },
+    { "file": "App.dc.html",           "x": 1600, "y": 0,    "w": 1440, "h": 940,  "title": "02–05 · The app · clickable", "is_interactive": true },
+    { "file": "Tailoring.dc.html",     "x": 1600, "y": 1120, "w": 760,  "h": 560,  "title": "03 · Recasting — progress", "is_interactive": true },
+    { "file": "States.dc.html",        "x": 1600, "y": 1840, "w": 1440, "h": 1020, "title": "Empty, error & success states" },
+    { "file": "MobileLanding.dc.html", "x": 3200, "y": 0,    "w": 390,  "h": 1700, "title": "Landing · mobile" },
+    { "file": "MobileApp.dc.html",     "x": 3700, "y": 0,    "w": 390,  "h": 880,  "title": "App · mobile" }
+  ],
+  "annotations": [
+    { "id": "how-to-drive", "x": 1600, "y": -168, "w": 620,
+      "text": "This one is clickable.\nIn \"02–05 · The app\": press Upload Resume, then Tailor My Resume — the progress runs and drops you in the editor. Click any tailored line to edit it. The sidebar switches screens, pipeline stages filter the table, and a table row opens the application drawer." },
+    { "id": "sample-data", "x": 0, "y": -168, "w": 560,
+      "text": "Sample data throughout: the 127,483 counter, the 24 applications and the 82% match are plausible placeholders, not real numbers. Aisha Khan and her resume are invented. The privacy section carries a bracketed placeholder for your real policy link." }
+  ],
+  "launch": { "view": "canvas" }
+}

@@ -1,0 +1,31 @@
+<meta charset="utf-8">
+<title>{{ cl.name }} — Cover Letter{% if cl.company %} — {{ cl.company }}{% endif %}</title>
+<style>
+  @page { size: {{ page_size }}; margin: {{ margin }}; }
+  body {
+    font-family: {{ font_stack | safe }};
+    font-size: 11pt;
+    line-height: 1.5;
+    color: #111;
+    margin: 0;
+  }
+  .head { margin-bottom: 18pt; }
+  .head h1 { font-size: 15pt; margin: 0 0 3pt; }
+  .head .contact { font-size: 9.5pt; color: #333; }
+  .head .contact span + span::before { content: " · "; color: #999; }
+  p { margin: 0 0 11pt; }
+  .signoff { margin-top: 16pt; }
+</style>
+
+<div class="head">
+  <h1>{{ cl.name }}</h1>
+  <div class="contact">
+    {%- if contact.email %}<span>{{ contact.email }}</span>{% endif -%}
+    {%- if contact.phone %}<span>{{ contact.phone }}</span>{% endif -%}
+    {%- if contact.location %}<span>{{ contact.location }}</span>{% endif -%}
+  </div>
+</div>
+
+<p>{{ cl.greeting }}</p>
+{% for para in cl.paragraphs %}<p>{{ para }}</p>{% endfor %}
+<div class="signoff"><p>{{ cl.signoff }}<br>{{ cl.name }}</p></div>

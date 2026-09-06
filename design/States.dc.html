@@ -1,0 +1,246 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body { margin: 0; }
+    .rc {
+      --surface:#ffffff; --ground:#f6f7f9; --line:#dde3ea; --ink:#131c25; --muted:#5d6b79;
+      --good:#1f6f5c; --warn:#915f0e; --bad:#a32e2e;
+      --tint:  color-mix(in oklab, var(--accent) 7%,  #ffffff);
+      --tint2: color-mix(in oklab, var(--accent) 14%, #ffffff);
+      --aline: color-mix(in oklab, var(--accent) 26%, #ffffff);
+      --deep:  color-mix(in oklab, var(--accent) 86%, #04101a);
+      --goodt: color-mix(in oklab, var(--good) 12%, #ffffff);
+      --badt:  color-mix(in oklab, var(--bad) 9%, #ffffff);
+      --badl:  color-mix(in oklab, var(--bad) 32%, #ffffff);
+      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+      color: var(--ink); background: var(--ground);
+      -webkit-font-smoothing: antialiased; min-height:100%; padding:36px 40px 44px;
+    }
+    .num { font-variant-numeric: tabular-nums; }
+    .card { background: var(--surface); border:1px solid var(--line); border-radius:4px; }
+    .screen { background: var(--ground); border:1px solid var(--line); border-radius:4px; overflow:hidden;
+              box-shadow: 0 1px 2px rgba(19,28,37,.03), 0 18px 40px -28px rgba(19,28,37,.35); }
+    .cap { font-size:11px; font-weight:650; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); }
+    .capsub { margin:5px 0 12px; font-size:12.5px; line-height:1.5; color:var(--muted); }
+    .btn { display:inline-flex; align-items:center; justify-content:center; gap:7px; height:34px; padding:0 13px;
+           border-radius:4px; font-size:12.5px; font-weight:600; border:1px solid transparent; cursor:pointer;
+           font-family:inherit; white-space:nowrap; }
+    .btn-primary { background: var(--accent); color:#fff; }
+    .btn-ghost { background: var(--surface); color: var(--ink); border-color: var(--line); }
+    .pill { display:inline-flex; align-items:center; gap:6px; height:21px; padding:0 8px; border-radius:3px;
+            font-size:11px; font-weight:600; }
+    .pill .dot { width:5px; height:5px; border-radius:99px; background: currentColor; }
+    .p-applied { background: var(--tint); color: var(--accent); }
+    .grid { display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:26px 24px; }
+    @media (max-width: 900px) { .grid { grid-template-columns: minmax(0,1fr); } }
+  </style>
+</helmet>
+
+<div class="rc" style="--accent: {{accent}};">
+
+  <div style="margin-bottom:26px;">
+    <h1 style="margin:0; font-size:20px; font-weight:640; letter-spacing:-0.024em;">Empty, error and success states</h1>
+    <p style="margin:6px 0 0; font-size:13.5px; color:var(--muted);">The screens a tracker lives or dies on — day one, one application, a file we can't read, and a finished download.</p>
+  </div>
+
+  <div class="grid">
+
+    <!-- ───────── 1 · nothing yet ───────── -->
+    <div>
+      <div class="cap">Empty · day one</div>
+      <p class="capsub">No zeroed-out KPI cards. One thing to do, and the reason to do it.</p>
+      <div class="screen" style="padding:24px;">
+        <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:14px;">
+          <div>
+            <div style="font-size:18px; font-weight:640; letter-spacing:-0.022em;">Good morning, Aisha</div>
+            <div style="margin-top:5px; font-size:13px; color:var(--muted);">Nothing here yet — let's fix that.</div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:20px; padding:36px 28px; text-align:center;">
+          <span style="width:112px; height:70px; margin:0 auto; display:flex; align-items:center; justify-content:center; gap:10px;">
+            <span style="width:38px; height:48px; border-radius:3px; background:var(--ground); border:1px solid var(--line); display:flex; flex-direction:column; justify-content:center; gap:4px; padding:7px;">
+              <span style="height:4px; border-radius:2px; background:#d7dee5; width:70%;"></span>
+              <span style="height:3px; border-radius:2px; background:#e6ebf0;"></span>
+              <span style="height:3px; border-radius:2px; background:#e6ebf0; width:85%;"></span>
+            </span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#c3ccd6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M13 6l6 6-6 6"/></svg>
+            <span style="width:38px; height:48px; border-radius:3px; background:var(--tint); border:1px solid var(--aline); display:flex; flex-direction:column; justify-content:center; gap:4px; padding:7px;">
+              <span style="height:4px; border-radius:2px; background:var(--aline); width:70%;"></span>
+              <span style="height:3px; border-radius:2px; background:var(--aline);"></span>
+              <span style="height:3px; border-radius:2px; background:#e6ebf0; width:85%;"></span>
+            </span>
+          </span>
+          <div style="margin-top:16px; font-size:15px; font-weight:640;">No applications yet</div>
+          <p style="margin:7px auto 0; max-width:340px; font-size:12.5px; line-height:1.6; color:var(--muted);">
+            Tailor a resume to a posting and Recast starts the tracker for you — the version you sent, the date, and what happens next.
+          </p>
+          <div style="display:flex; gap:9px; justify-content:center; margin-top:18px;">
+            <button class="btn btn-primary">Tailor my first resume</button>
+            <button class="btn btn-ghost">Add one by hand</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ───────── 2 · exactly one ───────── -->
+    <div>
+      <div class="cap">One application</div>
+      <p class="capsub">A pipeline of one is still a pipeline. The card that earns its place is the next action.</p>
+      <div class="screen" style="padding:24px;">
+        <div style="font-size:18px; font-weight:640; letter-spacing:-0.022em;">Good morning, Aisha</div>
+        <div style="margin-top:5px; font-size:13px; color:var(--muted);">One application out. Here's where it stands.</div>
+
+        <div class="card" style="margin-top:18px; padding:15px 16px; background:var(--tint); border-color:var(--aline);">
+          <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+            <span style="width:32px; height:32px; border-radius:4px; background:var(--surface); border:1px solid var(--aline); color:var(--accent); display:grid; place-items:center; flex:0 0 auto;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7v5.2l3.2 1.9"/></svg>
+            </span>
+            <div style="flex:1; min-width:150px;">
+              <div style="font-size:13px; font-weight:640; color:var(--accent);">Follow up on September 3</div>
+              <div style="margin-top:2px; font-size:11.5px; color:var(--muted);">Six working days since you applied to Stripe.</div>
+            </div>
+            <button class="btn btn-ghost" style="height:30px;">Mark as followed up</button>
+          </div>
+        </div>
+
+        <div style="display:flex; align-items:stretch; gap:8px; margin-top:16px;">
+          <div class="card" style="flex:1; padding:11px 12px; border-color:var(--aline); background:var(--tint);">
+            <div class="num" style="font-size:19px; font-weight:650; color:var(--accent); line-height:1;">1</div>
+            <div style="margin-top:5px; font-size:11px; font-weight:600; color:var(--accent);">Applied</div>
+          </div>
+          <div class="card" style="flex:1; padding:11px 12px;">
+            <div class="num" style="font-size:19px; font-weight:650; color:#c3ccd6; line-height:1;">0</div>
+            <div style="margin-top:5px; font-size:11px; font-weight:600; color:var(--muted);">Screening</div>
+          </div>
+          <div class="card" style="flex:1; padding:11px 12px;">
+            <div class="num" style="font-size:19px; font-weight:650; color:#c3ccd6; line-height:1;">0</div>
+            <div style="margin-top:5px; font-size:11px; font-weight:600; color:var(--muted);">Interviewing</div>
+          </div>
+          <div class="card" style="flex:1; padding:11px 12px;">
+            <div class="num" style="font-size:19px; font-weight:650; color:#c3ccd6; line-height:1;">0</div>
+            <div style="margin-top:5px; font-size:11px; font-weight:600; color:var(--muted);">Offer</div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:14px; overflow:hidden;">
+          <div style="display:flex; align-items:center; gap:12px; padding:0 15px; height:50px;">
+            <span style="flex:1; min-width:0; font-size:13px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Applied Scientist</span>
+            <span style="flex:0 0 90px; display:flex; align-items:center; gap:7px;">
+              <span style="width:20px; height:20px; border-radius:4px; background:#eff2f5; color:#5d6b79; display:grid; place-items:center; font-size:9.5px; font-weight:700;">S</span>
+              <span style="font-size:12.5px;">Stripe</span>
+            </span>
+            <span class="num" style="flex:0 0 74px; font-size:12px; color:var(--muted);">Recast v2</span>
+            <span class="num" style="flex:0 0 56px; font-size:12px; color:var(--muted);">Aug 26</span>
+            <span style="flex:0 0 74px;"><span class="pill p-applied"><span class="dot"></span>Applied</span></span>
+          </div>
+        </div>
+        <p style="margin:11px 2px 0; font-size:11.5px; color:var(--muted);">Tailor another resume and this becomes a pipeline.</p>
+      </div>
+    </div>
+
+    <!-- ───────── 3 · error ───────── -->
+    <div>
+      <div class="cap">Error · we can't read the file</div>
+      <p class="capsub">Say what went wrong, why, and what to do instead. Never a bare "upload failed".</p>
+      <div class="screen" style="padding:24px;">
+
+        <div class="card" style="padding:18px; border-color:var(--badl); background:var(--badt);">
+          <div style="display:flex; align-items:flex-start; gap:12px;">
+            <span style="width:32px; height:32px; border-radius:4px; background:var(--surface); border:1px solid var(--badl); color:var(--bad); display:grid; place-items:center; flex:0 0 auto;">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8.5v4.6M12 16.6v.1"/><path d="M10.3 4.2 2.9 17a2 2 0 0 0 1.7 3h14.8a2 2 0 0 0 1.7-3L13.7 4.2a2 2 0 0 0-3.4 0z"/></svg>
+            </span>
+            <div style="min-width:0; flex:1;">
+              <div style="font-size:14px; font-weight:640; color:var(--bad);">We couldn't read scanned-cv.pdf</div>
+              <p style="margin:7px 0 0; font-size:12.5px; line-height:1.6; color:#5a4444;">
+                There's no text layer in this file — it's a scan or a photo, so a parser (and an employer's ATS) sees an image, not words.
+              </p>
+              <div style="display:flex; gap:8px; margin-top:14px; flex-wrap:wrap;">
+                <button class="btn btn-primary">Try another file</button>
+                <button class="btn btn-ghost">Build my profile by hand</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top:18px;">
+          <label style="display:block; font-size:11.5px; font-weight:600; color:var(--muted); margin-bottom:6px;">Job URL</label>
+          <div style="height:34px; border:1px solid var(--badl); border-radius:4px; background:var(--surface); display:flex; align-items:center; padding:0 11px; font-size:12.5px; color:var(--ink); box-shadow:0 0 0 3px color-mix(in oklab, var(--bad) 9%, transparent);">careers.example</div>
+          <p style="margin:6px 0 0; font-size:11.5px; color:var(--bad);">That doesn't look like a full link — try one starting with https://</p>
+        </div>
+
+        <div class="card" style="margin-top:18px; padding:12px 14px; display:flex; align-items:center; gap:10px;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--warn)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto;"><circle cx="12" cy="12" r="8.5"/><path d="M12 8v4.6M12 16v.1"/></svg>
+          <span style="font-size:12px; line-height:1.5; color:var(--muted);">Tailoring is taking longer than usual. Your work is saved — we'll keep trying.</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ───────── 4 · success ───────── -->
+    <div>
+      <div class="cap">Success · after the download</div>
+      <p class="capsub">Confirm what happened, then offer the one thing that comes next.</p>
+      <div class="screen" style="padding:24px;">
+
+        <div class="card" style="padding:22px;">
+          <div style="display:flex; align-items:center; gap:12px;">
+            <span style="width:34px; height:34px; border-radius:99px; background:var(--goodt); color:var(--good); display:grid; place-items:center; flex:0 0 auto;">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7"/></svg>
+            </span>
+            <div style="min-width:0;">
+              <div style="font-size:14.5px; font-weight:640;">Resume downloaded</div>
+              <div class="num" style="margin-top:3px; font-size:12px; color:var(--muted);">aisha-khan-google-data-scientist.pdf · 2 pages · 148 KB</div>
+            </div>
+          </div>
+
+          <div style="margin-top:16px; padding-top:16px; border-top:1px solid var(--line); display:flex; flex-direction:column; gap:9px;">
+            <div style="display:flex; align-items:center; gap:9px; font-size:12.5px; color:var(--muted);">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--good)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto;"><path d="m5 12.5 4.5 4.5L19 7"/></svg>
+              21 of 21 bullets survive text extraction
+            </div>
+            <div style="display:flex; align-items:center; gap:9px; font-size:12.5px; color:var(--muted);">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--good)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto;"><path d="m5 12.5 4.5 4.5L19 7"/></svg>
+              Email and phone found by the parser
+            </div>
+            <div style="display:flex; align-items:center; gap:9px; font-size:12.5px; color:var(--muted);">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--good)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto;"><path d="m5 12.5 4.5 4.5L19 7"/></svg>
+              Saved to your library as Recast v4
+            </div>
+          </div>
+
+          <div style="margin-top:18px; padding-top:16px; border-top:1px solid var(--line);">
+            <div style="font-size:12.5px; font-weight:640;">Track it?</div>
+            <p style="margin:5px 0 0; font-size:12px; line-height:1.55; color:var(--muted);">We'll add Data Scientist at Google to your applications with today's date.</p>
+            <div style="display:flex; gap:8px; margin-top:13px;">
+              <button class="btn btn-primary">Save as an application</button>
+              <button class="btn btn-ghost">Not now</button>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top:18px; display:flex; align-items:center; gap:11px; background:#131c25; color:#fff; padding:11px 15px; border-radius:4px; width:fit-content;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#5fc2a6" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7"/></svg>
+          <span style="font-size:12.5px; font-weight:600;">Cover letter downloaded as DOCX</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+
+<script data-dc-script data-props='{"accent":{"editor":"color","default":"#1d4e79","options":["#1d4e79","#1b62c4","#1f6f5c","#131c25"],"section":"Brand"},"$preview":{"width":1440,"height":1020}}'>
+class Component extends DCLogic {
+  renderVals() { return { accent: this.props.accent ?? '#1d4e79' }; }
+}
+</script>
+</body>
+</html>

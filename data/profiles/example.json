@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "origin": "manual",
+  "contact": {
+    "name": "Alex Rao",
+    "email": "alex.rao@example.com",
+    "phone": "+1 415 555 0142",
+    "location": "Bengaluru, India",
+    "links": { "GitHub": "https://github.com/alexrao", "LinkedIn": "https://linkedin.com/in/alexrao" }
+  },
+  "headline": "Backend and ML engineer",
+  "summaries": [
+    { "text": "Backend engineer with 5 years building Python services at scale, most recently owning a payments ledger handling 40M transactions a month.", "tags": ["backend", "python", "payments", "scale"] },
+    { "text": "ML engineer focused on getting models into production: feature pipelines, evaluation harnesses, and the boring reliability work that makes them useful.", "tags": ["ml", "mlops", "python", "pytorch"] },
+    { "text": "Full-stack engineer who prefers backend, comfortable owning a feature from schema to deploy.", "tags": ["fullstack", "python", "typescript"] }
+  ],
+  "experience": [
+    {
+      "company": "Fintrail", "title": "Senior Backend Engineer", "location": "Bengaluru",
+      "start": "2023-02", "end": null,
+      "bullets": [
+        { "text": "Owned the double-entry ledger service processing 40M transactions per month, cutting reconciliation breaks from 1.2% to 0.03% over two quarters.", "tags": ["python", "postgres", "payments", "ownership"], "metric": "1.2% -> 0.03%" },
+        { "text": "Redesigned the settlement pipeline around idempotency keys and an outbox table, eliminating the duplicate-payout class of incidents entirely.", "tags": ["distributed systems", "postgres", "reliability", "kafka"] },
+        { "text": "Cut p99 API latency from 890ms to 210ms by replacing a chatty ORM access pattern with a single materialised view refresh.", "tags": ["performance", "postgres", "sql", "python"], "metric": "890ms -> 210ms" },
+        { "text": "Introduced contract tests between the ledger and four consuming services, taking cross-team breakages from roughly weekly to two in a year.", "tags": ["testing", "pytest", "collaboration"] },
+        { "text": "Migrated the service from a hand-rolled deploy script to Terraform and ArgoCD, dropping deploy time from 25 minutes to under 4.", "tags": ["terraform", "kubernetes", "argocd", "infrastructure", "ci/cd"] },
+        { "text": "Mentored two junior engineers through their first on-call rotations and wrote the runbook the team still uses.", "tags": ["mentoring", "leadership", "on-call", "documentation"] },
+        { "text": "Built an internal FastAPI service exposing ledger snapshots to the finance team, replacing a weekly manual CSV export.", "tags": ["fastapi", "python", "api", "internal tools"] }
+      ]
+    },
+    {
+      "company": "Loamly", "title": "Backend Engineer", "location": "Remote",
+      "start": "2021-06", "end": "2023-01",
+      "bullets": [
+        { "text": "Built the ingestion pipeline for satellite imagery metadata, handling 8TB a week through Airflow and S3.", "tags": ["airflow", "aws", "s3", "python", "data engineering"] },
+        { "text": "Shipped a crop-classification model into production behind a gRPC service, moving it from a notebook to a versioned, monitored endpoint.", "tags": ["pytorch", "ml", "grpc", "mlops", "deployment"] },
+        { "text": "Wrote the evaluation harness the ML team used for every model release, including per-region slices that caught a 14-point accuracy drop before launch.", "tags": ["ml", "evaluation", "python", "testing"], "metric": "14-point drop caught" },
+        { "text": "Reduced AWS spend 38% by moving cold imagery to Glacier and right-sizing the Airflow workers.", "tags": ["aws", "cost", "infrastructure"], "metric": "38%" },
+        { "text": "Added structured logging and tracing across six services with OpenTelemetry, cutting mean time to diagnose from hours to minutes.", "tags": ["observability", "opentelemetry", "reliability"] },
+        { "text": "Worked directly with two agronomist customers to turn vague accuracy complaints into a concrete labelling-error hypothesis, which held.", "tags": ["customer", "communication", "ml", "product"] }
+      ]
+    },
+    {
+      "company": "Northbeam Labs", "title": "Software Engineer", "location": "Pune",
+      "start": "2019-08", "end": "2021-05",
+      "bullets": [
+        { "text": "Built REST APIs in Django for a logistics dashboard used by 300 warehouse staff daily.", "tags": ["django", "python", "rest", "api"] },
+        { "text": "Replaced nightly batch stock reconciliation with an event-driven Celery workflow, taking stock accuracy from 92% to 99.4%.", "tags": ["celery", "python", "events", "redis"], "metric": "92% -> 99.4%" },
+        { "text": "Wrote the team's first integration test suite, going from zero automated coverage to 71% on the critical path.", "tags": ["testing", "pytest", "quality"], "metric": "0 -> 71%" },
+        { "text": "Built an internal React dashboard for warehouse throughput, still in use three years later.", "tags": ["react", "typescript", "frontend"] }
+      ]
+    }
+  ],
+  "projects": [
+    { "name": "ledgerfuzz", "url": "https://github.com/alexrao/ledgerfuzz", "description": "Property-based fuzzer for double-entry accounting invariants.", "tech": ["Python", "Hypothesis", "Postgres"],
+      "bullets": [
+        { "text": "Property-based fuzzer that generates transaction sequences and asserts double-entry invariants hold; found three bugs in two open-source ledger libraries.", "tags": ["python", "testing", "hypothesis", "open source"] },
+        { "text": "340 stars, used in CI by two payments startups.", "tags": ["open source", "adoption"], "metric": "340 stars" }
+      ] },
+    { "name": "tinyrag", "url": "https://github.com/alexrao/tinyrag", "description": "A 400-line RAG implementation for teaching.", "tech": ["Python", "FAISS", "FastAPI"],
+      "bullets": [
+        { "text": "A deliberately minimal 400-line retrieval-augmented generation implementation written to teach the moving parts without a framework.", "tags": ["llm", "rag", "python", "faiss", "teaching"] },
+        { "text": "Wrote an accompanying post on chunking trade-offs that reached the front page of Hacker News.", "tags": ["writing", "communication", "llm"] }
+      ] },
+    { "name": "shiftplan", "url": null, "description": "Constraint-solver shift scheduler for a local clinic.", "tech": ["Python", "OR-Tools"],
+      "bullets": [
+        { "text": "Built a constraint-solver shift scheduler for a 40-person clinic, replacing a spreadsheet that took the manager a day a week.", "tags": ["python", "or-tools", "optimisation", "volunteering"] }
+      ] }
+  ],
+  "education": [
+    { "institution": "BITS Pilani", "degree": "B.E.", "field": "Computer Science", "start": "2015", "end": "2019", "detail": "Thesis on approximate nearest-neighbour search. GPA 8.7/10." }
+  ],
+  "skills": [
+    { "name": "Languages", "skills": ["Python", "SQL", "TypeScript", "Go", "Bash"] },
+    { "name": "Backend", "skills": ["FastAPI", "Django", "Celery", "gRPC", "Kafka", "Redis", "PostgreSQL"] },
+    { "name": "ML", "skills": ["PyTorch", "scikit-learn", "pandas", "MLflow", "FAISS"] },
+    { "name": "Infrastructure", "skills": ["AWS", "Docker", "Kubernetes", "Terraform", "ArgoCD", "Airflow", "OpenTelemetry"] },
+    { "name": "Practices", "skills": ["Property-based testing", "Contract testing", "On-call", "Code review"] }
+  ],
+  "certifications": [],
+  "answer_bank": [
+    { "key": "visa_status", "question": "Do you require visa sponsorship?", "answer": "I am an Indian citizen and would require sponsorship for roles based outside India.", "tailorable": false },
+    { "key": "notice_period", "question": "What is your notice period?", "answer": "60 days, negotiable to 45.", "tailorable": false },
+    { "key": "salary_expectation", "question": "What are your salary expectations?", "answer": "Open to discussing based on the full package and level; happy to align with your band for the role.", "tailorable": false },
+    { "key": "why_this_company", "question": "Why do you want to work here?", "answer": "I want to work on systems where correctness is load-bearing rather than aspirational — payments, infrastructure, or ML that people actually depend on.", "tailorable": true },
+    { "key": "biggest_challenge", "question": "Describe a difficult technical problem you solved.", "answer": "The duplicate-payout incidents at Fintrail: the fix was not a patch but a redesign around idempotency keys and an outbox table, which required convincing three teams to change their integration.", "tailorable": true }
+  ]
+}

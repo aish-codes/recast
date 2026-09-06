@@ -1,0 +1,12 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+out/
+.pytest_cache/
+.ruff_cache/
+data/profiles/*.json
+!data/profiles/example.json
+data/jobs/*.txt
+data/jobs/*.md
+node_modules/

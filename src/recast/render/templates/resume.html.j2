@@ -1,0 +1,134 @@
+{#
+  ATS-safe resume template.
+
+  Non-negotiables encoded here, because these are what break machine parsing:
+    - one column, no floats, no CSS grid for content flow
+    - no text in page headers/footers (Playwright renders none)
+    - no images, no icons, no text inside SVG
+    - section headings are real text in reading order
+    - links show their text as well as href
+    - real <ul>/<li> so bullets extract as separate lines
+  `scale` lets the fit loop tighten the page by a few percent before it starts
+  dropping content.
+#}
+<meta charset="utf-8">
+<title>{{ r.contact.name }} — {{ r.role or "Resume" }}</title>
+<style>
+  @page { size: {{ page_size }}; margin: {{ margin }}; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+{% if preview %}
+  /* On screen the @page margin does nothing, so the text would run to the very
+     edge of the iframe. Reproduce the printed margin instead. */
+  html { background: #e9edf1; }
+  body { max-width: 8.5in; margin: 0 auto; padding: {{ margin }}; background: #fff; }
+{% endif %}
+  body {
+    font-family: {{ font_stack | safe }};
+    font-size: {{ (10.5 * scale) | round(2) }}pt;
+    line-height: {{ (1.34 * scale) | round(3) }};
+    color: #111;
+    -webkit-font-smoothing: antialiased;
+    /* Ligatures embed as U+FB01 etc. and extract as "ﬁrst", not "first".
+       Modern parsers usually cope; enough of them don't that it isn't worth the
+       typographic nicety on a document whose job is to be machine-read. */
+    font-variant-ligatures: none;
+    text-rendering: optimizeLegibility;
+  }
+  h1 {
+    font-size: {{ (19 * scale) | round(2) }}pt;
+    letter-spacing: .3px;
+    margin: 0 0 2pt;
+    font-weight: 700;
+  }
+  .contact { font-size: {{ (9.2 * scale) | round(2) }}pt; color: #333; margin-bottom: {{ (8 * scale) | round(1) }}pt; }
+  .contact a { color: #111; text-decoration: none; }
+  .contact span + span::before { content: " · "; color: #999; }
+
+  h2 {
+    font-size: {{ (10 * scale) | round(2) }}pt;
+    text-transform: uppercase;
+    letter-spacing: .9px;
+    border-bottom: .8pt solid #222;
+    padding-bottom: 2pt;
+    margin: {{ (11 * scale) | round(1) }}pt 0 {{ (5 * scale) | round(1) }}pt;
+    font-weight: 700;
+    break-after: avoid;
+  }
+  .entry { margin-bottom: {{ (7 * scale) | round(1) }}pt; break-inside: avoid; }
+  .entry-head { display: flex; justify-content: space-between; gap: 12pt; align-items: baseline; }
+  .entry-title { font-weight: 700; }
+  .entry-org { font-weight: 400; }
+  .entry-meta { font-size: {{ (9.2 * scale) | round(2) }}pt; color: #444; white-space: nowrap; }
+  ul { margin: {{ (3 * scale) | round(1) }}pt 0 0; padding-left: {{ (13 * scale) | round(1) }}pt; }
+  li { margin-bottom: {{ (2.4 * scale) | round(2) }}pt; }
+  .summary { margin: 0 0 {{ (2 * scale) | round(1) }}pt; }
+  .skills-row { margin-bottom: {{ (2.5 * scale) | round(1) }}pt; }
+  .skills-row b { font-weight: 700; }
+  .edu-detail { color: #333; }
+  a { color: #111; }
+</style>
+
+<h1>{{ r.contact.name | norm }}</h1>
+<div class="contact">
+  {%- if r.contact.email %}<span>{{ r.contact.email }}</span>{% endif -%}
+  {%- if r.contact.phone %}<span>{{ r.contact.phone }}</span>{% endif -%}
+  {%- if r.contact.location %}<span>{{ r.contact.location }}</span>{% endif -%}
+  {%- for label, url in r.contact.links.items() %}<span><a href="{{ url }}">{{ url | strip_scheme }}</a></span>{% endfor -%}
+</div>
+
+{% if r.summary %}
+<h2>Summary</h2>
+<p class="summary">{{ r.summary.text | norm }}</p>
+{% endif %}
+
+{% if r.experience %}
+<h2>Experience</h2>
+{% for e in r.experience %}
+<div class="entry">
+  <div class="entry-head">
+    <div><span class="entry-title">{{ e.title | norm }}</span><span class="entry-org">, {{ e.company | norm }}</span></div>
+    <div class="entry-meta">{{ e.start }} – {{ e.end or "Present" }}{% if e.location %} · {{ e.location }}{% endif %}</div>
+  </div>
+  {% if e.bullets %}<ul>{% for b in e.bullets %}<li>{{ b.text | norm }}</li>{% endfor %}</ul>{% endif %}
+</div>
+{% endfor %}
+{% endif %}
+
+{% if r.projects %}
+<h2>Projects</h2>
+{% for p in r.projects %}
+<div class="entry">
+  <div class="entry-head">
+    <div><span class="entry-title">{{ p.name | norm }}</span>{% if p.tech %}<span class="entry-org"> — {{ p.tech | join(", ") | norm }}</span>{% endif %}</div>
+    {% if p.url %}<div class="entry-meta"><a href="{{ p.url }}">{{ p.url | strip_scheme }}</a></div>{% endif %}
+  </div>
+  {% if p.bullets %}<ul>{% for b in p.bullets %}<li>{{ b.text | norm }}</li>{% endfor %}</ul>{% endif %}
+</div>
+{% endfor %}
+{% endif %}
+
+{% if r.skills %}
+<h2>Skills</h2>
+{% for g in r.skills %}
+<div class="skills-row"><b>{{ g.name }}:</b> {{ g.skills | join(", ") | norm }}</div>
+{% endfor %}
+{% endif %}
+
+{% if r.education %}
+<h2>Education</h2>
+{% for ed in r.education %}
+<div class="entry">
+  <div class="entry-head">
+    <div><span class="entry-title">{{ ed.degree }}{% if ed.field %}, {{ ed.field }}{% endif %}</span><span class="entry-org">, {{ ed.institution }}</span></div>
+    {% if ed.start or ed.end %}<div class="entry-meta">{{ ed.start }}{% if ed.start and ed.end %} – {% endif %}{{ ed.end }}</div>{% endif %}
+  </div>
+  {% if ed.detail %}<div class="edu-detail">{{ ed.detail | norm }}</div>{% endif %}
+</div>
+{% endfor %}
+{% endif %}
+
+{% if r.certifications %}
+<h2>Certifications</h2>
+<ul>{% for c in r.certifications %}<li>{{ c | norm }}</li>{% endfor %}</ul>
+{% endif %}
