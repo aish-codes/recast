@@ -25,7 +25,7 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
     : ((await res.text()) as unknown as T);
 }
 
-import type { Application, Ats, Job, ParseResult, Profile, Resume } from "./types";
+import type { Analysis, Application, Ats, CoverLetter, Job, ParseResult, Profile, Resume } from "./types";
 
 export const api = {
   applications: () => req<Application[]>("/applications"),
@@ -79,11 +79,19 @@ export const api = {
 
   atsText: (id: string) => req<string>(`/applications/${id}/ats`),
 
+  // What a parser pulls out of the rendered PDF. Rendered on demand, so this is
+  // a fresh read of the resume as it stands rather than a stored number.
+  atsReport: (id: string) => req<Ats>(`/applications/${id}/ats.json`),
+
+  // The match dashboard's data: subscores with their inputs, requirement
+  // matches with evidence, gaps. Served from cache unless the profile or the
+  // ruleset moved on.
+  analysis: (id: string) => req<Analysis>(`/applications/${id}/analysis`),
+
   coverLetter: (id: string) =>
-    req<{ paragraphs: string[]; greeting: string; signoff: string; name: string }>(
-      `/applications/${id}/cover-letter`,
-      { method: "POST" },
-    ),
+    req<CoverLetter>(`/applications/${id}/cover-letter`, { method: "POST" }),
+
+  getCoverLetter: (id: string) => req<CoverLetter>(`/applications/${id}/cover-letter`),
 
   pdfUrl: (id: string) => `${BASE}/applications/${id}/resume.pdf`,
   docxUrl: (id: string) => `${BASE}/applications/${id}/resume.docx`,

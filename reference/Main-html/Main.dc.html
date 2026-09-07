@@ -1,0 +1,539 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./vendor/react.js"></script>
+<script src="./vendor/react-dom.js"></script>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body { margin: 0; }
+    .rc {
+      --surface:#ffffff; --ground:#f6f7f9; --line:#dde3ea; --ink:#131c25; --muted:#5d6b79;
+      --good:#1f6f5c; --warn:#915f0e; --bad:#a32e2e;
+      --tint:  color-mix(in oklab, var(--accent) 7%,  #ffffff);
+      --tint2: color-mix(in oklab, var(--accent) 14%, #ffffff);
+      --aline: color-mix(in oklab, var(--accent) 26%, #ffffff);
+      --deep:  color-mix(in oklab, var(--accent) 86%, #04101a);
+      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+      color: var(--ink); background: var(--ground);
+      -webkit-font-smoothing: antialiased;
+    }
+    .rc a { color: var(--accent); text-decoration: none; }
+    .rc a:hover { color: var(--deep); }
+    .num { font-variant-numeric: tabular-nums; }
+    .wrap { max-width: 1120px; margin: 0 auto; padding: 0 40px; }
+
+    .btn { display:inline-flex; align-items:center; justify-content:center; gap:10px;
+           height:48px; padding:0 22px; border-radius:4px; font-size:15px; font-weight:600;
+           letter-spacing:-0.01em; cursor:pointer; border:1px solid transparent;
+           font-family:inherit; white-space:nowrap;
+           transition: background .15s ease, border-color .15s ease, box-shadow .18s ease, transform .12s ease; }
+    .btn-primary { background: var(--accent); color:#fff;
+                   box-shadow: 0 1px 2px rgba(19,28,37,.12), 0 10px 26px -14px color-mix(in oklab, var(--accent) 70%, transparent); }
+    .btn-primary:hover { background: var(--deep); transform: translateY(-1px); }
+    .btn-ghost { background: var(--surface); color: var(--ink); border-color: var(--line); }
+    .btn-ghost:hover { background: var(--ground); border-color:#cbd5df; }
+    .btn-light { background:#fff; color: var(--ink); border-color: rgba(255,255,255,.2); }
+    .btn-light:hover { background:#f2f5f8; transform: translateY(-1px); }
+    .btn-sm { height:36px; padding:0 14px; font-size:13.5px; border-radius:4px; }
+
+    .gtile { width:22px; height:22px; border-radius:3px; background:#fff;
+             display:grid; place-items:center; flex:0 0 auto; }
+
+    .card { background: var(--surface); border:1px solid var(--line); border-radius:4px; }
+    .lift { transition: box-shadow .2s ease, transform .2s ease, border-color .2s ease; }
+    .lift:hover { border-color:#cbd5df; transform: translateY(-2px);
+                  box-shadow: 0 1px 2px rgba(19,28,37,.04), 0 18px 36px -22px rgba(19,28,37,.40); }
+
+    .eyebrow { font-size:11px; font-weight:650; letter-spacing:.10em; text-transform:uppercase; color:var(--muted); }
+    .h2 { font-size:34px; line-height:1.14; letter-spacing:-0.024em; font-weight:640; margin:0; }
+    .lede { font-size:16.5px; line-height:1.6; color:var(--muted); margin:0; }
+
+    .navlink { font-size:14px; color:var(--muted); transition: color .15s ease; }
+    .navlink:hover { color: var(--ink); }
+
+    /* doc line primitives for the infographics */
+    .ln  { height:5px; border-radius:2px; background:#e3e8ed; }
+    .ln-d{ height:6px; border-radius:2px; background:#c3ccd6; }
+    .ln-a{ height:6px; border-radius:2px; background: var(--aline); }
+
+    .stage { border:1px solid var(--line); background:var(--surface); border-radius:4px; padding:14px;
+             transition: border-color .35s ease, box-shadow .35s ease, transform .35s ease, background .35s ease; }
+    .stage.on { border-color: var(--aline); background: var(--tint);
+                box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 9%, transparent);
+                transform: translateY(-3px); }
+
+    @keyframes tickA { from { opacity:.5; transform: translateY(-3px);} to { opacity:1; transform:none; } }
+    @keyframes tickB { from { opacity:.5; transform: translateY(-3px);} to { opacity:1; transform:none; } }
+    .tick-a { animation: tickA .5s cubic-bezier(.2,.7,.3,1); }
+    .tick-b { animation: tickB .5s cubic-bezier(.2,.7,.3,1); }
+
+    @keyframes pulse { 0% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--good) 50%, transparent); }
+                       70% { box-shadow: 0 0 0 8px transparent; }
+                       100% { box-shadow: 0 0 0 0 transparent; } }
+    .live-dot { width:7px; height:7px; border-radius:999px; background: var(--good); animation: pulse 2.4s infinite; }
+
+    .steprow { display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap:24px; }
+    .whygrid { display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:20px; }
+    .trustgrid { display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap:0; }
+    .statrow { display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap:0; }
+    .pipe { display:flex; align-items:stretch; gap:0; }
+
+    @media (max-width: 900px) {
+      .wrap { padding: 0 20px; }
+      .steprow, .whygrid, .trustgrid, .statrow { grid-template-columns: minmax(0,1fr); }
+      .trustgrid > div, .statrow > div { border-left:0 !important; border-top:1px solid var(--line); }
+      .pipe { flex-direction: column; }
+      .h1resp { font-size: 38px !important; }
+    }
+  </style>
+</helmet>
+
+<div class="rc" style="--accent: {{accent}}; min-height:100%;">
+
+  <!-- ─────────────────────────── NAV ─────────────────────────── -->
+  <header style="border-bottom:1px solid var(--line); background:rgba(255,255,255,.86); backdrop-filter:blur(8px);">
+    <div class="wrap" style="height:72px; display:flex; align-items:center; justify-content:space-between; gap:32px;">
+      <span style="font-size:20px; font-weight:640; letter-spacing:-0.03em;">recast</span>
+      <nav style="display:flex; align-items:center; gap:28px;">
+        <a class="navlink" href="#how">How it works</a>
+        <a class="navlink" href="#why">Why Recast</a>
+        <a class="navlink" href="#privacy">Privacy</a>
+      </nav>
+      <button class="btn btn-primary btn-sm">Get started</button>
+    </div>
+  </header>
+
+  <!-- ─────────────────────────── HERO ─────────────────────────── -->
+  <section style="padding:88px 0 84px;">
+    <div class="wrap" style="display:flex; flex-direction:column; align-items:center; text-align:center;">
+
+      <span style="display:inline-flex; align-items:center; gap:8px; background:var(--tint);
+                   border:1px solid var(--aline); color:var(--accent); border-radius:4px;
+                   padding:6px 12px; font-size:12.5px; font-weight:600; letter-spacing:-0.005em;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3.2 13.7 9 19.5 10.7 13.7 12.4 12 18.2 10.3 12.4 4.5 10.7 10.3 9 12 3.2z"></path></svg>
+        One resume. Tailored for every opportunity.
+      </span>
+
+      <h1 class="h1resp" style="margin:26px 0 0; max-width:880px; font-size:60px; line-height:1.05;
+                 letter-spacing:-0.032em; font-weight:650;">
+        Your resume. Recast for the job you actually want.
+      </h1>
+
+      <p style="margin:22px 0 0; max-width:640px; font-size:18px; line-height:1.6; color:var(--muted); text-wrap:pretty;">
+        Upload your resume and a job description. Recast intelligently tailors your resume to match the role — while keeping your experience authentic.
+      </p>
+
+      <div style="display:flex; gap:12px; margin-top:34px; flex-wrap:wrap; justify-content:center;">
+        <button class="btn btn-primary" style="padding-left:14px;">
+          <span class="gtile">
+            <svg width="15" height="15" viewBox="0 0 48 48" aria-hidden="true">
+              <path fill="#4285F4" d="M45.1 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h11.8c-.5 2.8-2 5.1-4.4 6.7v5.5h7.1c4.2-3.8 6.6-9.5 6.6-16.2z"></path>
+              <path fill="#34A853" d="M24 46c5.9 0 10.9-2 14.5-5.3l-7.1-5.5c-2 1.3-4.5 2.1-7.4 2.1-5.7 0-10.6-3.9-12.3-9.1H4.3v5.7C8 41.1 15.4 46 24 46z"></path>
+              <path fill="#FBBC05" d="M11.7 28.2c-.4-1.3-.7-2.7-.7-4.2s.2-2.9.7-4.2v-5.7H4.3C2.9 17.1 2 20.5 2 24s.9 6.9 2.3 9.9l7.4-5.7z"></path>
+              <path fill="#EA4335" d="M24 10.8c3.2 0 6.1 1.1 8.4 3.3l6.3-6.3C34.9 4.2 29.9 2 24 2 15.4 2 8 6.9 4.3 14.1l7.4 5.7c1.7-5.2 6.6-9 12.3-9z"></path>
+            </svg>
+          </span>
+          Get Started with Google
+        </button>
+        <button class="btn btn-ghost" onClick="{{seeHow}}">
+          {{howLabel}}
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg>
+        </button>
+      </div>
+
+      <p style="margin:18px 0 0; font-size:13px; color:var(--muted);">
+        PDF or DOCX · Every bullet traces back to one you wrote
+      </p>
+    </div>
+
+    <!-- pipeline infographic -->
+    <div class="wrap" style="margin-top:60px;">
+      <div class="card" style="padding:26px 28px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:20px;">
+          <span class="eyebrow">The whole journey</span>
+          <span style="font-size:12px; color:var(--muted);">{{pipeHint}}</span>
+        </div>
+
+        <div class="pipe">
+          <!-- 1 · resume in -->
+          <div class="{{s0}}" style="flex:1 1 0; min-width:0;">
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
+              <span style="width:26px; height:26px; border-radius:4px; background:var(--tint2); color:var(--accent); display:grid; place-items:center;">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"></path><path d="M14 3v5h5"></path></svg>
+              </span>
+              <span style="font-size:13px; font-weight:600;">Your resume</span>
+            </div>
+            <div style="background:var(--ground); border:1px solid var(--line); border-radius:3px; padding:12px; display:flex; flex-direction:column; gap:7px;">
+              <div class="ln-d" style="width:52%;"></div>
+              <div class="ln" style="width:88%;"></div>
+              <div class="ln" style="width:76%;"></div>
+              <div class="ln" style="width:82%;"></div>
+              <div class="ln" style="width:64%;"></div>
+            </div>
+            <p style="margin:10px 0 0; font-size:11.5px; color:var(--muted);">Parsed once into your master profile</p>
+          </div>
+
+          <div style="flex:0 0 44px; display:grid; place-items:center; color:#c3ccd6;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"></path></svg>
+          </div>
+
+          <!-- 2 · analysis -->
+          <div class="{{s1}}" style="flex:1 1 0; min-width:0;">
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
+              <span style="width:26px; height:26px; border-radius:4px; background:var(--tint2); color:var(--accent); display:grid; place-items:center;">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="7.5"></circle><circle cx="12" cy="12" r="2.6"></circle><path d="M12 2.2v2.3M12 19.5v2.3M2.2 12h2.3M19.5 12h2.3"></path></svg>
+              </span>
+              <span style="font-size:13px; font-weight:600;">Analysis</span>
+            </div>
+            <div style="background:var(--ground); border:1px solid var(--line); border-radius:3px; padding:12px; display:flex; flex-wrap:wrap; gap:6px;">
+              <span style="font-size:11px; padding:3px 7px; border-radius:3px; background:#fff; border:1px solid var(--line); color:var(--ink);">Python</span>
+              <span style="font-size:11px; padding:3px 7px; border-radius:3px; background:#fff; border:1px solid var(--line); color:var(--ink);">SQL</span>
+              <span style="font-size:11px; padding:3px 7px; border-radius:3px; background:var(--tint2); border:1px solid var(--aline); color:var(--accent); font-weight:600;">A/B testing</span>
+              <span style="font-size:11px; padding:3px 7px; border-radius:3px; background:#fff; border:1px solid var(--line); color:var(--ink);">Airflow</span>
+              <span style="font-size:11px; padding:3px 7px; border-radius:3px; background:#fff; border:1px solid var(--line); color:var(--ink);">causal inference</span>
+            </div>
+            <p style="margin:10px 0 0; font-size:11.5px; color:var(--muted);">14 requirements read out of the posting</p>
+          </div>
+
+          <div style="flex:0 0 44px; display:grid; place-items:center; color:#c3ccd6;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"></path></svg>
+          </div>
+
+          <!-- 3 · tailored -->
+          <div class="{{s2}}" style="flex:1 1 0; min-width:0;">
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
+              <span style="width:26px; height:26px; border-radius:4px; background:var(--tint2); color:var(--accent); display:grid; place-items:center;">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L18.5 9.5a2.1 2.1 0 0 0-3-3L5 17v3z"></path><path d="m13.5 6.5 4 4"></path></svg>
+              </span>
+              <span style="font-size:13px; font-weight:600;">Recast resume</span>
+            </div>
+            <div style="background:#fff; border:1px solid var(--line); border-radius:3px; padding:12px; display:flex; flex-direction:column; gap:7px;">
+              <div class="ln-d" style="width:52%;"></div>
+              <div class="ln-a" style="width:92%;"></div>
+              <div class="ln" style="width:74%;"></div>
+              <div class="ln-a" style="width:84%;"></div>
+              <div class="ln" style="width:60%;"></div>
+            </div>
+            <p style="margin:10px 0 0; font-size:11.5px; color:var(--muted);">Reordered, re-emphasised — nothing invented</p>
+          </div>
+
+          <div style="flex:0 0 44px; display:grid; place-items:center; color:#c3ccd6;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"></path></svg>
+          </div>
+
+          <!-- 4 · application -->
+          <div class="{{s3}}" style="flex:1 1 0; min-width:0;">
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
+              <span style="width:26px; height:26px; border-radius:4px; background:var(--tint2); color:var(--accent); display:grid; place-items:center;">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 3 10.6 13.4"></path><path d="M21 3 14.2 21l-3.6-7.6L3 9.8 21 3z"></path></svg>
+              </span>
+              <span style="font-size:13px; font-weight:600;">Application</span>
+            </div>
+            <div style="background:var(--ground); border:1px solid var(--line); border-radius:3px; padding:12px; display:flex; flex-direction:column; gap:9px;">
+              <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+                <span style="font-size:12px; font-weight:600;">Data Scientist</span>
+                <span style="font-size:10.5px; font-weight:600; padding:2px 6px; border-radius:3px; background:var(--tint2); color:var(--accent);">Applied</span>
+              </div>
+              <span style="font-size:11.5px; color:var(--muted);">Google · Recast v3</span>
+              <div class="ln" style="width:100%;"></div>
+            </div>
+            <p style="margin:10px 0 0; font-size:11.5px; color:var(--muted);">Tracked from saved through to offer</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────────────── LIVE COUNTER ─────────────────────── -->
+  <section style="border-top:1px solid var(--line); border-bottom:1px solid var(--line); background:var(--surface); padding:72px 0 0;">
+    <div class="wrap" style="text-align:center;">
+      <div style="display:inline-flex; align-items:center; gap:8px; margin-bottom:18px;">
+        <span class="live-dot"></span>
+        <span class="eyebrow" style="color:var(--good);">Updating live</span>
+      </div>
+      <div class="num {{tickClass}}" style="font-size:76px; line-height:1; font-weight:650; letter-spacing:-0.04em;">
+        {{counter}}
+      </div>
+      <p style="margin:16px 0 0; font-size:16.5px; color:var(--muted);">Resumes tailored to job descriptions</p>
+    </div>
+
+    <div class="wrap" style="margin-top:56px; padding-bottom:0;">
+      <div class="statrow" style="border-top:1px solid var(--line);">
+        <div style="padding:28px 8px; text-align:center;">
+          <div class="num" style="font-size:30px; font-weight:640; letter-spacing:-0.025em;">{{jobs}}</div>
+          <div style="margin-top:6px; font-size:13px; color:var(--muted);">Jobs tailored for</div>
+        </div>
+        <div style="padding:28px 8px; text-align:center; border-left:1px solid var(--line);">
+          <div class="num" style="font-size:30px; font-weight:640; letter-spacing:-0.025em;">{{letters}}</div>
+          <div style="margin-top:6px; font-size:13px; color:var(--muted);">Cover letters generated</div>
+        </div>
+        <div style="padding:28px 8px; text-align:center; border-left:1px solid var(--line);">
+          <div class="num" style="font-size:30px; font-weight:640; letter-spacing:-0.025em;">{{users}}</div>
+          <div style="margin-top:6px; font-size:13px; color:var(--muted);">Users helped</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────────────── HOW IT WORKS ─────────────────────── -->
+  <section id="how" style="padding:96px 0;">
+    <div class="wrap">
+      <span class="eyebrow">How it works</span>
+      <h2 class="h2" style="margin-top:14px; max-width:640px;">Three steps. Nothing rewritten from scratch.</h2>
+      <p class="lede" style="margin-top:14px; max-width:560px;">
+        You bring the experience. Recast decides what to put forward for this particular job.
+      </p>
+
+      <div class="steprow" style="margin-top:48px;">
+        <div class="card lift" style="padding:26px;">
+          <div style="display:flex; align-items:center; justify-content:space-between;">
+            <span style="width:40px; height:40px; border-radius:4px; background:var(--tint); border:1px solid var(--aline); color:var(--accent); display:grid; place-items:center;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15.5V3.5m0 0L8 7.5m4-4 4 4"></path><path d="M3.5 15v3.5a2 2 0 0 0 2 2h13a2 2 0 0 0 2-2V15"></path></svg>
+            </span>
+            <span class="num" style="font-size:34px; font-weight:650; letter-spacing:-0.03em; color:#ccd5de;">01</span>
+          </div>
+          <h3 style="margin:20px 0 0; font-size:17px; font-weight:640; letter-spacing:-0.012em;">Upload</h3>
+          <p style="margin:8px 0 0; font-size:14px; line-height:1.6; color:var(--muted);">
+            Upload your existing resume and the job description.
+          </p>
+        </div>
+
+        <div class="card lift" style="padding:26px;">
+          <div style="display:flex; align-items:center; justify-content:space-between;">
+            <span style="width:40px; height:40px; border-radius:4px; background:var(--tint); border:1px solid var(--aline); color:var(--accent); display:grid; place-items:center;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="7.5"></circle><circle cx="12" cy="12" r="2.6"></circle><path d="M12 2.2v2.3M12 19.5v2.3M2.2 12h2.3M19.5 12h2.3"></path></svg>
+            </span>
+            <span class="num" style="font-size:34px; font-weight:650; letter-spacing:-0.03em; color:#ccd5de;">02</span>
+          </div>
+          <h3 style="margin:20px 0 0; font-size:17px; font-weight:640; letter-spacing:-0.012em;">Tailor</h3>
+          <p style="margin:8px 0 0; font-size:14px; line-height:1.6; color:var(--muted);">
+            Recast analyzes the JD and adapts your resume to emphasize relevant skills, experience and keywords.
+          </p>
+        </div>
+
+        <div class="card lift" style="padding:26px;">
+          <div style="display:flex; align-items:center; justify-content:space-between;">
+            <span style="width:40px; height:40px; border-radius:4px; background:var(--tint); border:1px solid var(--aline); color:var(--accent); display:grid; place-items:center;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 3 10.6 13.4"></path><path d="M21 3 14.2 21l-3.6-7.6L3 9.8 21 3z"></path></svg>
+            </span>
+            <span class="num" style="font-size:34px; font-weight:650; letter-spacing:-0.03em; color:#ccd5de;">03</span>
+          </div>
+          <h3 style="margin:20px 0 0; font-size:17px; font-weight:640; letter-spacing:-0.012em;">Apply</h3>
+          <p style="margin:8px 0 0; font-size:14px; line-height:1.6; color:var(--muted);">
+            Review, edit and download your tailored resume. Optionally generate a customized cover letter.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ───────────────────────── WHY RECAST ───────────────────────── -->
+  <section id="why" style="padding:96px 0; background:var(--surface); border-top:1px solid var(--line); border-bottom:1px solid var(--line);">
+    <div class="wrap">
+      <span class="eyebrow">Why Recast</span>
+      <h2 class="h2" style="margin-top:14px; max-width:660px;">Built for people who are tired of rewriting the same resume.</h2>
+
+      <div class="whygrid" style="margin-top:44px;">
+        <div class="card lift" style="padding:28px; background:var(--ground);">
+          <span style="width:36px; height:36px; border-radius:4px; background:var(--tint2); color:var(--accent); display:grid; place-items:center;">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"></path><path d="M14 3v5h5"></path><path d="M9 13h6M9 17h4"></path></svg>
+          </span>
+          <h3 style="margin:18px 0 0; font-size:17px; font-weight:640; letter-spacing:-0.012em;">JD-Specific Resume</h3>
+          <p style="margin:8px 0 0; font-size:14px; line-height:1.6; color:var(--muted);">Tailor your resume to the exact role you're applying for.</p>
+          <p style="margin:12px 0 0; padding-top:12px; border-top:1px solid var(--line); font-size:12.5px; line-height:1.55; color:var(--muted);">
+            Bullets are selected, ordered and rephrased — never written from nothing.
+          </p>
+        </div>
+
+        <div class="card lift" style="padding:28px; background:var(--ground);">
+          <span style="width:36px; height:36px; border-radius:4px; background:var(--tint2); color:var(--accent); display:grid; place-items:center;">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2"></path><path d="M4.5 12h15"></path></svg>
+          </span>
+          <h3 style="margin:18px 0 0; font-size:17px; font-weight:640; letter-spacing:-0.012em;">ATS-Friendly</h3>
+          <p style="margin:8px 0 0; font-size:14px; line-height:1.6; color:var(--muted);">Identify important keywords and optimize your resume structure.</p>
+          <p style="margin:12px 0 0; padding-top:12px; border-top:1px solid var(--line); font-size:12.5px; line-height:1.55; color:var(--muted);">
+            We read the finished PDF back with a parser and show you what didn't survive.
+          </p>
+        </div>
+
+        <div class="card lift" style="padding:28px; background:var(--ground);">
+          <span style="width:36px; height:36px; border-radius:4px; background:var(--tint2); color:var(--accent); display:grid; place-items:center;">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h9M18.5 7h1.5M4 17h4.5M14 17h6"></path><circle cx="15.5" cy="7" r="2.4"></circle><circle cx="11" cy="17" r="2.4"></circle></svg>
+          </span>
+          <h3 style="margin:18px 0 0; font-size:17px; font-weight:640; letter-spacing:-0.012em;">You Stay in Control</h3>
+          <p style="margin:8px 0 0; font-size:14px; line-height:1.6; color:var(--muted);">Review and edit every change before downloading.</p>
+          <p style="margin:12px 0 0; padding-top:12px; border-top:1px solid var(--line); font-size:12.5px; line-height:1.55; color:var(--muted);">
+            Nothing is deleted — anything trimmed is set aside, one click from coming back.
+          </p>
+        </div>
+
+        <div class="card lift" style="padding:28px; background:var(--ground);">
+          <span style="width:36px; height:36px; border-radius:4px; background:var(--tint2); color:var(--accent); display:grid; place-items:center;">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5.5" width="17" height="13" rx="2"></rect><path d="m4 7.5 8 5.6 8-5.6"></path></svg>
+          </span>
+          <h3 style="margin:18px 0 0; font-size:17px; font-weight:640; letter-spacing:-0.012em;">Cover Letter in One Click</h3>
+          <p style="margin:8px 0 0; font-size:14px; line-height:1.6; color:var(--muted);">Generate a role-specific cover letter alongside your tailored resume.</p>
+          <p style="margin:12px 0 0; padding-top:12px; border-top:1px solid var(--line); font-size:12.5px; line-height:1.55; color:var(--muted);">
+            Written off the same tailored resume, so it never claims more than the resume does.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ───────────────────────── TRUST ───────────────────────── -->
+  <section id="privacy" style="padding:88px 0;">
+    <div class="wrap">
+      <div style="display:flex; align-items:flex-end; justify-content:space-between; gap:32px; flex-wrap:wrap;">
+        <div>
+          <span class="eyebrow">Your documents</span>
+          <h2 class="h2" style="margin-top:14px; max-width:520px;">Your resume stays yours.</h2>
+        </div>
+        <p class="lede" style="max-width:400px; font-size:14.5px;">
+          Recast is deliberately conservative about what it will do to a document you are going to sign your name to.
+        </p>
+      </div>
+
+      <div class="card trustgrid" style="margin-top:36px; overflow:hidden;">
+        <div style="padding:30px 28px;">
+          <span style="color:var(--accent); display:block;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="10" width="16" height="10.5" rx="2"></rect><path d="M8 10V7a4 4 0 0 1 8 0v3"></path></svg>
+          </span>
+          <h3 style="margin:16px 0 0; font-size:15px; font-weight:640;">Your resume remains yours</h3>
+          <p style="margin:8px 0 0; font-size:13.5px; line-height:1.6; color:var(--muted);">
+            Everything on a tailored resume comes from the profile you uploaded. Nothing else gets invented.
+          </p>
+        </div>
+        <div style="padding:30px 28px; border-left:1px solid var(--line);">
+          <span style="color:var(--accent); display:block;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L18.5 9.5a2.1 2.1 0 0 0-3-3L5 17v3z"></path><path d="m13.5 6.5 4 4"></path></svg>
+          </span>
+          <h3 style="margin:16px 0 0; font-size:15px; font-weight:640;">You control every edit</h3>
+          <p style="margin:8px 0 0; font-size:13.5px; line-height:1.6; color:var(--muted);">
+            Every rewrite shows the original one click away. Revert it, or lock a bullet so it is never touched again.
+          </p>
+        </div>
+        <div style="padding:30px 28px; border-left:1px solid var(--line);">
+          <span style="color:var(--accent); display:block;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.2 19 6v6c0 4.4-3 8.2-7 9-4-.8-7-4.6-7-9V6l7-2.8z"></path><path d="m9 12 2.2 2.2L15.5 10"></path></svg>
+          </span>
+          <h3 style="margin:16px 0 0; font-size:15px; font-weight:640;">Secure handling of your documents</h3>
+          <p style="margin:8px 0 0; font-size:13.5px; line-height:1.6; color:var(--muted);">
+            Documents move over an encrypted connection and stay in your account.
+            <span style="color:var(--warn);">[link your privacy policy]</span>
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ───────────────────────── FINAL CTA ───────────────────────── -->
+  <section style="background:var(--deep); padding:104px 0;">
+    <div class="wrap" style="text-align:center; display:flex; flex-direction:column; align-items:center;">
+      <h2 style="margin:0; max-width:720px; font-size:42px; line-height:1.12; letter-spacing:-0.028em; font-weight:640; color:#fff;">
+        Ready to make every application count?
+      </h2>
+      <p style="margin:18px 0 0; font-size:17px; color:rgba(255,255,255,.7);">
+        One resume. Tailored for every opportunity.
+      </p>
+      <button class="btn btn-light" style="margin-top:34px; padding-left:14px;">
+        <span class="gtile" style="background:transparent;">
+          <svg width="17" height="17" viewBox="0 0 48 48" aria-hidden="true">
+            <path fill="#4285F4" d="M45.1 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h11.8c-.5 2.8-2 5.1-4.4 6.7v5.5h7.1c4.2-3.8 6.6-9.5 6.6-16.2z"></path>
+            <path fill="#34A853" d="M24 46c5.9 0 10.9-2 14.5-5.3l-7.1-5.5c-2 1.3-4.5 2.1-7.4 2.1-5.7 0-10.6-3.9-12.3-9.1H4.3v5.7C8 41.1 15.4 46 24 46z"></path>
+            <path fill="#FBBC05" d="M11.7 28.2c-.4-1.3-.7-2.7-.7-4.2s.2-2.9.7-4.2v-5.7H4.3C2.9 17.1 2 20.5 2 24s.9 6.9 2.3 9.9l7.4-5.7z"></path>
+            <path fill="#EA4335" d="M24 10.8c3.2 0 6.1 1.1 8.4 3.3l6.3-6.3C34.9 4.2 29.9 2 24 2 15.4 2 8 6.9 4.3 14.1l7.4 5.7c1.7-5.2 6.6-9 12.3-9z"></path>
+          </svg>
+        </span>
+        Continue with Google
+      </button>
+      <p style="margin:18px 0 0; font-size:13px; color:rgba(255,255,255,.55);">
+        PDF or DOCX in. PDF or DOCX out.
+      </p>
+    </div>
+  </section>
+
+  <!-- ───────────────────────── FOOTER ───────────────────────── -->
+  <footer style="background:var(--surface); border-top:1px solid var(--line); padding:34px 0;">
+    <div class="wrap" style="display:flex; align-items:center; justify-content:space-between; gap:24px; flex-wrap:wrap;">
+      <span style="font-size:15px; font-weight:640; letter-spacing:-0.03em;">recast</span>
+      <div style="display:flex; align-items:center; gap:24px;">
+        <a class="navlink" href="#privacy">Privacy</a>
+        <a class="navlink" href="#privacy">Terms</a>
+        <a class="navlink" href="#privacy">Contact</a>
+      </div>
+      <span style="font-size:12.5px; color:var(--muted);">© 2026 Recast</span>
+    </div>
+  </footer>
+
+</div>
+</x-dc>
+
+<script data-dc-script data-props='{"accent":{"editor":"color","default":"#1d4e79","options":["#1d4e79","#1b62c4","#1f6f5c","#131c25"],"section":"Brand"},"counterStart":{"editor":"int","default":127483,"min":0,"step":1,"section":"Live metrics"},"$preview":{"width":1440,"height":4200}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { n: 0, tick: false, stage: -1, playing: false };
+  }
+
+  componentDidMount() {
+    // The counter reads as a live platform metric: it moves on its own.
+    this.counter = setInterval(() => {
+      this.setState((s) => ({ n: s.n + 1, tick: !s.tick }));
+    }, 2400);
+    // Idle: walk the pipeline slowly so the diagram is never dead on arrival.
+    this.idle = setInterval(() => {
+      this.setState((s) => (s.playing ? s : { stage: (s.stage + 1) % 5 }));
+    }, 1600);
+  }
+
+  componentWillUnmount() {
+    clearInterval(this.counter);
+    clearInterval(this.idle);
+  }
+
+  play() {
+    if (this.state.playing) return;
+    this.setState({ playing: true, stage: 0 });
+    let i = 0;
+    this.walk = setInterval(() => {
+      i += 1;
+      if (i > 3) {
+        clearInterval(this.walk);
+        this.setState({ playing: false, stage: -1 });
+      } else {
+        this.setState({ stage: i });
+      }
+    }, 950);
+  }
+
+  fmt(n) { return n.toLocaleString('en-US'); }
+
+  renderVals() {
+    const base = this.props.counterStart ?? 127483;
+    const total = base + this.state.n;
+    const stage = this.state.stage;
+    const cls = (i) => (stage === i ? 'stage on' : 'stage');
+    return {
+      accent: this.props.accent ?? '#1d4e79',
+      counter: this.fmt(total) + '+',
+      tickClass: this.state.tick ? 'tick-a' : 'tick-b',
+      jobs: '41,206',
+      letters: '52,918',
+      users: '18,340',
+      s0: cls(0), s1: cls(1), s2: cls(2), s3: cls(3),
+      seeHow: () => this.play(),
+      howLabel: this.state.playing ? 'Playing…' : 'See How It Works',
+      pipeHint: this.state.playing ? 'Resume → Analysis → Recast resume → Application' : 'Four stages — you review every one',
+    };
+  }
+}
+</script>
+</body>
+</html>

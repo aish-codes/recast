@@ -154,6 +154,79 @@ export type ParseResult = {
   pages: number;
 };
 
+// --- analysis (mirrors models/analysis.py) -----------------------------------
+
+export type Evidence = {
+  bullet_id: string;
+  excerpt: string;
+  reason: string;
+  score: number;
+};
+
+export type RequirementMatch = {
+  requirement_id: string;
+  requirement: string;
+  skill: string | null;
+  kind: "must" | "nice";
+  verdict: "strong" | "partial" | "weak" | "absent";
+  confidence: number;
+  evidence: Evidence[];
+};
+
+export type SubScore = {
+  name: string;
+  score: number;
+  weight: number;
+  detail: string;
+  inputs: string[];
+};
+
+export type AnalysisGap = {
+  requirement_id: string;
+  requirement: string;
+  kind: "must" | "nice";
+  category: "missing" | "underrepresented" | "semantically_equivalent" | "transferable";
+  confidence: "high" | "low";
+  suggestion: string;
+};
+
+export type Analysis = {
+  id: string;
+  job_id: string;
+  overall: number;
+  band: "strong" | "partial" | "weak";
+  subscores: SubScore[];
+  matches: RequirementMatch[];
+  gaps: AnalysisGap[];
+  keywords_hit: string[];
+  keywords_missed: string[];
+};
+
+export type CoverLetter = {
+  job_id: string;
+  greeting: string;
+  paragraphs: string[];
+  signoff: string;
+  name: string;
+};
+
 export const STATUSES = [
   "draft", "applied", "screening", "interviewing", "offer", "rejected", "withdrawn",
 ] as const;
+
+export type Status = (typeof STATUSES)[number];
+
+/** Stage grouping used by the pipeline strip and the KPI cards. */
+export const PIPELINE: Status[] = [
+  "draft", "applied", "screening", "interviewing", "offer", "rejected",
+];
+
+export const STATUS_LABEL: Record<string, string> = {
+  draft: "Draft",
+  applied: "Applied",
+  screening: "Screening",
+  interviewing: "Interviewing",
+  offer: "Offer",
+  rejected: "Rejected",
+  withdrawn: "Withdrawn",
+};

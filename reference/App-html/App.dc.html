@@ -1,0 +1,1376 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./vendor/react.js"></script>
+<script src="./vendor/react-dom.js"></script>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body { margin: 0; }
+    .app {
+      --surface:#ffffff; --ground:#f6f7f9; --line:#dde3ea; --ink:#131c25; --muted:#5d6b79;
+      --good:#1f6f5c; --warn:#915f0e; --bad:#a32e2e;
+      --tint:  color-mix(in oklab, var(--accent) 7%,  #ffffff);
+      --tint2: color-mix(in oklab, var(--accent) 14%, #ffffff);
+      --aline: color-mix(in oklab, var(--accent) 26%, #ffffff);
+      --deep:  color-mix(in oklab, var(--accent) 86%, #04101a);
+      --goodt: color-mix(in oklab, var(--good) 12%, #ffffff);
+      --warnt: color-mix(in oklab, var(--warn) 12%, #ffffff);
+      --badt:  color-mix(in oklab, var(--bad)  10%, #ffffff);
+      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+      color: var(--ink); background: var(--ground);
+      -webkit-font-smoothing: antialiased;
+      height: 100%; display: flex; overflow: hidden;
+    }
+    .app a { color: var(--accent); text-decoration: none; }
+    .app a:hover { color: var(--deep); }
+    .num { font-variant-numeric: tabular-nums; }
+
+    .scroll { overflow-y: auto; overflow-x: hidden; }
+    .scroll::-webkit-scrollbar { width: 11px; }
+    .scroll::-webkit-scrollbar-thumb { background:#d3dae2; border-radius:99px; border:3px solid transparent; background-clip: padding-box; }
+    .scroll::-webkit-scrollbar-track { background: transparent; }
+
+    /* ── buttons ───────────────────────────────────────────── */
+    .btn { display:inline-flex; align-items:center; justify-content:center; gap:8px;
+           height:36px; padding:0 14px; border-radius:4px; font-size:13.5px; font-weight:600;
+           letter-spacing:-0.006em; cursor:pointer; border:1px solid transparent; font-family:inherit;
+           white-space:nowrap; transition: background .15s ease, border-color .15s ease, box-shadow .18s ease, transform .12s ease, opacity .15s ease; }
+    .btn-primary { background: var(--accent); color:#fff;
+                   box-shadow: 0 1px 2px rgba(19,28,37,.12), 0 8px 20px -14px color-mix(in oklab, var(--accent) 80%, transparent); }
+    .btn-primary:hover:not(:disabled) { background: var(--deep); transform: translateY(-1px); }
+    .btn-ghost { background: var(--surface); color: var(--ink); border-color: var(--line); }
+    .btn-ghost:hover:not(:disabled) { background: var(--ground); border-color:#cbd5df; }
+    .btn-quiet { background: transparent; color: var(--muted); }
+    .btn-quiet:hover:not(:disabled) { background: var(--ground); color: var(--ink); }
+    .btn:disabled { opacity:.38; cursor:not-allowed; box-shadow:none; transform:none; }
+    .btn-lg { height:52px; padding:0 30px; font-size:15.5px; border-radius:4px; }
+    .btn-xs { height:28px; padding:0 9px; font-size:12px; gap:6px; }
+
+    /* ── sidebar ───────────────────────────────────────────── */
+    .nav-item { display:flex; align-items:center; gap:11px; height:38px; padding:0 11px; border-radius:4px;
+                font-size:13.5px; font-weight:500; color:var(--muted); cursor:pointer; border:none;
+                background:transparent; width:100%; text-align:left; font-family:inherit;
+                transition: background .13s ease, color .13s ease; }
+    .nav-item:hover { background: var(--ground); color: var(--ink); }
+    .nav-item.on { background: var(--tint); color: var(--accent); font-weight:600; }
+    .nav-item.on svg { stroke: var(--accent); }
+
+    /* ── form atoms ────────────────────────────────────────── */
+    .inp { width:100%; height:36px; padding:0 11px; border:1px solid var(--line); border-radius:4px;
+           background:var(--surface); font-size:13.5px; font-family:inherit; color:var(--ink); outline:none;
+           transition: border-color .15s ease, box-shadow .15s ease; }
+    .inp:focus { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 12%, transparent); }
+    .ta { width:100%; padding:11px 12px; border:1px solid var(--line); border-radius:4px; background:var(--surface);
+          font-size:13px; line-height:1.6; font-family:inherit; color:var(--ink); outline:none; resize:none;
+          transition: border-color .15s ease, box-shadow .15s ease; }
+    .ta:focus { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 12%, transparent); }
+    .ta::placeholder, .inp::placeholder { color:#9aa7b4; }
+
+    .seg { display:inline-flex; padding:2px; background:var(--ground); border:1px solid var(--line); border-radius:4px; gap:2px; }
+    .seg button { height:26px; padding:0 11px; border:none; background:transparent; border-radius:3px;
+                  font-size:12.5px; font-weight:600; color:var(--muted); cursor:pointer; font-family:inherit;
+                  transition: background .14s ease, color .14s ease, box-shadow .14s ease; }
+    .seg button:hover { color: var(--ink); }
+    .seg button.on { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(19,28,37,.10); }
+
+    .cbox { width:18px; height:18px; border-radius:3px; border:1.5px solid #c2ccd6; background:var(--surface);
+            display:grid; place-items:center; flex:0 0 auto; transition: background .14s ease, border-color .14s ease; }
+    .cbox.on { background: var(--accent); border-color: var(--accent); }
+
+    .drop { border:1.5px dashed #c8d2dc; border-radius:4px; background:var(--ground);
+            transition: border-color .16s ease, background .16s ease; }
+    .drop:hover { border-color: var(--aline); background: var(--tint); }
+
+    /* ── surfaces ──────────────────────────────────────────── */
+    .card { background: var(--surface); border:1px solid var(--line); border-radius:4px; }
+    .lift { transition: box-shadow .2s ease, transform .2s ease, border-color .2s ease; }
+    .lift:hover { border-color:#cbd5df; transform: translateY(-2px);
+                  box-shadow: 0 1px 2px rgba(19,28,37,.04), 0 16px 32px -22px rgba(19,28,37,.40); }
+    .eyebrow { font-size:10.5px; font-weight:650; letter-spacing:.09em; text-transform:uppercase; color:var(--muted); }
+
+    /* ── status pills ──────────────────────────────────────── */
+    .pill { display:inline-flex; align-items:center; gap:6px; height:22px; padding:0 8px; border-radius:3px;
+            font-size:11.5px; font-weight:600; white-space:nowrap; }
+    .pill .dot { width:5px; height:5px; border-radius:99px; background: currentColor; }
+    .p-draft { background:#eff2f5; color:var(--muted); }
+    .p-applied { background: var(--tint); color: var(--accent); }
+    .p-screening { background: var(--warnt); color: var(--warn); }
+    .p-interviewing { background: var(--tint2); color: var(--deep); }
+    .p-offer { background: var(--goodt); color: var(--good); }
+    .p-rejected { background: var(--badt); color: var(--bad); }
+
+    /* ── change marking in the recast document ─────────────── */
+    .mk { background: var(--tint2); box-shadow: inset 0 -1.5px 0 var(--aline); border-radius:2px; padding:0 1px; }
+    .chip { display:inline-flex; align-items:center; gap:4px; height:19px; padding:0 6px; border-radius:3px;
+            font-size:10.5px; font-weight:600; letter-spacing:.002em; }
+    .c-kw   { background: var(--tint2); color: var(--accent); }
+    .c-edit { background:#eff2f5; color: var(--muted); }
+    .c-move { background: var(--goodt); color: var(--good); }
+    .c-emph { background: var(--warnt); color: var(--warn); }
+
+    .brow { border-left:2px solid transparent; padding:7px 0 7px 12px; margin-left:-14px;
+            border-radius:0 3px 3px 0; transition: background .15s ease, border-color .15s ease; }
+    .brow.changed { border-left-color: var(--aline); }
+    .brow:hover { background: var(--tint); }
+    .btext { font-size:13px; line-height:1.62; cursor:text; }
+
+    .trow { cursor:pointer; transition: background .13s ease; }
+    .trow:hover { background: var(--ground); }
+    .trow .acts { opacity:0; transition: opacity .14s ease; }
+    .trow:hover .acts { opacity:1; }
+
+    .stagebox { flex:1 1 0; min-width:0; border:1px solid var(--line); background:var(--surface);
+                border-radius:4px; padding:13px 14px; cursor:pointer; text-align:left; font-family:inherit;
+                transition: border-color .16s ease, background .16s ease, transform .16s ease, box-shadow .16s ease; }
+    .stagebox:hover { border-color: var(--aline); transform: translateY(-2px);
+                      box-shadow: 0 1px 2px rgba(19,28,37,.04), 0 14px 28px -20px rgba(19,28,37,.40); }
+    .stagebox.on { border-color: var(--accent); background: var(--tint);
+                   box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 11%, transparent); }
+
+    /* ── tooltip ───────────────────────────────────────────── */
+    .tip { position:relative; display:inline-flex; }
+    .tipbody { position:absolute; bottom:calc(100% + 9px); left:50%; transform:translateX(-50%) translateY(3px);
+               background:#131c25; color:#fff; font-size:11.5px; line-height:1.5; font-weight:450;
+               padding:9px 11px; border-radius:4px; width:230px; text-align:left; z-index:60;
+               opacity:0; pointer-events:none; transition: opacity .16s ease, transform .16s ease;
+               box-shadow:0 10px 28px -12px rgba(0,0,0,.5); }
+    .tip:hover .tipbody { opacity:1; transform:translateX(-50%) translateY(0); }
+
+    /* ── progress steps ────────────────────────────────────── */
+    .sdot { background: transparent; box-shadow: inset 0 0 0 1.6px #ccd5de; }
+    .sdot.done { background: var(--good); box-shadow: none; }
+    .sdot.active { background: var(--accent); box-shadow: none; }
+    .stext { font-size: 13.5px; color: #9aa7b4; transition: color .3s ease; }
+    .stext.on { color: var(--ink); font-weight: 600; }
+
+    /* ── skills, filters, table, rail ───────────────────────── */
+    .sk { display:inline-flex; align-items:center; height:24px; padding:0 9px; border-radius:3px;
+          font-size:12px; font-weight:500; background:#eff2f5; color:#41505e; }
+    .sk-on { background: var(--tint2); color: var(--accent); font-weight:650; box-shadow: inset 0 0 0 1px var(--aline); }
+    .sk-off { background: transparent; color:#9aa7b4; box-shadow: inset 0 0 0 1px var(--line); }
+
+    .fchip { display:inline-flex; align-items:center; height:31px; padding:0 12px; border-radius:4px;
+             border:1px solid var(--line); background:var(--surface); font-size:12.5px; font-weight:600;
+             color:var(--muted); cursor:pointer; font-family:inherit;
+             transition: background .14s ease, color .14s ease, border-color .14s ease; }
+    .fchip:hover { border-color:#cbd5df; color:var(--ink); }
+    .fchip.on { background: var(--accent); border-color: var(--accent); color:#fff; }
+
+    .logo { background:#eff2f5; color:#5d6b79; }
+    .bar { background: var(--accent); }
+    .bar-mut { background:#c8d2dc; }
+    .hl { background: var(--aline); }
+
+    .caret { display:grid; place-items:center; transition: transform .18s ease; }
+    .caret.on { transform: rotate(180deg); }
+    .kd-a { background: var(--accent); }
+    .kd-w { background: var(--warn); }
+    .itm { display:inline-flex; align-items:center; height:22px; padding:0 8px; border-radius:3px;
+           font-size:11.5px; font-weight:500; background:#eff2f5; color:#41505e; }
+    .itm-w { background: var(--warnt); color: var(--warn); font-weight:600; }
+
+    .tdot { background: var(--accent); }
+    .tdot-off { background: transparent; box-shadow: inset 0 0 0 1.6px #ccd5de; }
+    .tline { background: var(--line); }
+    .tline-off { background: transparent; }
+
+    /* ── motion ────────────────────────────────────────────── */
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spin { animation: spin .9s linear infinite; }
+    @keyframes fadeUp { from { opacity:0; transform: translateY(6px); } to { opacity:1; transform:none; } }
+    .fade { animation: fadeUp .32s cubic-bezier(.2,.7,.3,1) both; }
+    @keyframes slideIn { from { transform: translateX(20px); opacity:0; } to { transform:none; opacity:1; } }
+    .slide { animation: slideIn .26s cubic-bezier(.2,.7,.3,1) both; }
+    @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+    .fadein { animation: fadeIn .2s ease both; }
+    @keyframes barPulse { 0%,100% { opacity:1; } 50% { opacity:.6; } }
+    .bar-live { animation: barPulse 1.6s ease-in-out infinite; }
+  </style>
+</helmet>
+
+<div class="app" style="--accent: {{accent}};">
+
+  <!-- ══════════════════════ SIDEBAR ══════════════════════ -->
+  <aside style="width:232px; flex:0 0 232px; background:var(--surface); border-right:1px solid var(--line); display:flex; flex-direction:column;">
+    <div style="height:64px; display:flex; align-items:center; padding:0 18px; border-bottom:1px solid var(--line);">
+      <span style="font-size:18px; font-weight:640; letter-spacing:-0.03em;">recast</span>
+    </div>
+
+    <nav style="padding:14px 12px; display:flex; flex-direction:column; gap:2px;">
+      <button class="{{n0}}" onClick="{{goHome}}">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#5d6b79" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m3.5 10.5 8.5-7 8.5 7"/><path d="M5.5 9.5V20h13V9.5"/></svg>
+        Home
+      </button>
+      <button class="{{n1}}" onClick="{{goTailor}}">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#5d6b79" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="7.5"/><circle cx="12" cy="12" r="2.6"/><path d="M12 2.2v2.3M12 19.5v2.3M2.2 12h2.3M19.5 12h2.3"/></svg>
+        Tailor Resume
+      </button>
+      <button class="{{n2}}" onClick="{{goApps}}">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#5d6b79" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 10h17M8 3.5v3M16 3.5v3"/></svg>
+        My Applications
+        <span style="margin-left:auto; font-size:11.5px; font-weight:600; color:var(--muted);" class="num">24</span>
+      </button>
+      <button class="{{n3}}" onClick="{{goLibrary}}">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#5d6b79" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H9v16H5.5A1.5 1.5 0 0 1 4 18.5z"/><path d="M12 4h3.5A1.5 1.5 0 0 1 17 5.5v13a1.5 1.5 0 0 1-1.5 1.5H12z"/><path d="M19.5 6.5 21 18"/></svg>
+        Resume Library
+      </button>
+      <button class="{{n4}}" onClick="{{goSoon}}">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#5d6b79" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8.5" r="3.8"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/></svg>
+        Profile
+      </button>
+      <button class="{{n5}}" onClick="{{goSoon}}">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#5d6b79" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 14a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1v.2a2 2 0 1 1-4 0v-.1a1.6 1.6 0 0 0-2.8-1.1l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.6 1.6 0 0 0 3.5 15a2 2 0 1 1 0-4h.1a1.6 1.6 0 0 0 1.1-2.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.6 1.6 0 0 0 10 4.5a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 2.8 1.1l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0 1.1 2.8 2 2 0 1 1 0 4h-.2a1.6 1.6 0 0 0-1.1.7z"/></svg>
+        Settings
+      </button>
+    </nav>
+
+    <div style="margin-top:auto; padding:12px;">
+      <div class="card" style="padding:12px; background:var(--ground);">
+        <div style="display:flex; align-items:center; gap:9px;">
+          <span style="width:28px; height:28px; border-radius:99px; background:var(--tint2); color:var(--accent); display:grid; place-items:center; font-size:11.5px; font-weight:650;">AK</span>
+          <div style="min-width:0; flex:1;">
+            <div style="font-size:12.5px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Aisha Khan</div>
+            <div style="font-size:11px; color:var(--muted);">Master profile · 21 bullets</div>
+          </div>
+        </div>
+        <div style="display:flex; align-items:center; gap:6px; margin-top:10px; padding-top:10px; border-top:1px solid var(--line); font-size:11px; color:var(--good);">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7"/></svg>
+          Up to date
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ══════════════════════ MAIN ══════════════════════ -->
+  <main style="flex:1 1 0; min-width:0; display:flex; flex-direction:column; position:relative;">
+
+    <!-- ─────────── SCREEN 2 · TAILOR ─────────── -->
+    <sc-if value="{{isTailor}}" hint-placeholder-val="{{ true }}">
+    <div class="scroll fade" style="flex:1; padding:36px 40px 48px;">
+      <div style="max-width:1040px; margin:0 auto;">
+
+        <h1 style="margin:0; font-size:26px; font-weight:640; letter-spacing:-0.026em;">Tailor your resume</h1>
+        <p style="margin:8px 0 0; font-size:14.5px; color:var(--muted);">Give us your resume and the job description. We'll do the matching.</p>
+
+        <div style="display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:20px; margin-top:28px;">
+
+          <!-- card 1 · resume -->
+          <div class="card" style="padding:20px; display:flex; flex-direction:column;">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+              <h2 style="margin:0; font-size:15px; font-weight:640;">Your Resume</h2>
+              <span class="{{resumeChipCls}}">{{resumeChipText}}</span>
+            </div>
+
+            <sc-if value="{{noResume}}" hint-placeholder-val="{{ true }}">
+              <p style="margin:6px 0 16px; font-size:13px; color:var(--muted);">Upload PDF or DOCX</p>
+              <div class="drop" style="flex:1; min-height:186px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; padding:20px;">
+                <span style="width:44px; height:44px; border-radius:4px; background:var(--surface); border:1px solid var(--line); color:var(--accent); display:grid; place-items:center;">
+                  <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15.5V3.5m0 0L8 7.5m4-4 4 4"/><path d="M3.5 15v3.5a2 2 0 0 0 2 2h13a2 2 0 0 0 2-2V15"/></svg>
+                </span>
+                <div style="text-align:center;">
+                  <div style="font-size:13.5px; font-weight:600;">Drop your resume here</div>
+                  <div style="margin-top:3px; font-size:12px; color:var(--muted);">PDF or DOCX · up to 5 MB</div>
+                </div>
+                <button class="btn btn-primary" onClick="{{upload}}">Upload Resume</button>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{hasResume}}" hint-placeholder-val="{{ false }}">
+              <p style="margin:6px 0 16px; font-size:13px; color:var(--muted);">Upload PDF or DOCX</p>
+              <div class="fade" style="flex:1; min-height:186px; border:1px solid var(--line); border-radius:4px; background:var(--ground); padding:16px; display:flex; flex-direction:column;">
+                <div style="display:flex; align-items:flex-start; gap:12px;">
+                  <span style="width:38px; height:46px; border-radius:3px; background:var(--surface); border:1px solid var(--line); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; flex:0 0 auto;">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#5d6b79" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg>
+                    <span style="font-size:7.5px; font-weight:700; letter-spacing:.05em; color:var(--bad);">PDF</span>
+                  </span>
+                  <div style="min-width:0; flex:1;">
+                    <div style="font-size:13.5px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">aisha-khan-resume.pdf</div>
+                    <div style="margin-top:3px; font-size:12px; color:var(--muted);" class="num">PDF · 2 pages · 184 KB</div>
+                  </div>
+                  <button class="btn btn-ghost btn-xs" onClick="{{replace}}">Replace</button>
+                </div>
+
+                <div style="height:4px; border-radius:99px; background:#e3e8ed; margin-top:14px; overflow:hidden;">
+                  <div style="height:100%; width:100%; background:var(--good); border-radius:99px;"></div>
+                </div>
+
+                <div style="margin-top:12px; display:flex; align-items:flex-start; gap:8px; color:var(--good);">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="margin-top:1px; flex:0 0 auto;"><path d="m5 12.5 4.5 4.5L19 7"/></svg>
+                  <span style="font-size:12.5px; font-weight:600;">Parsed — 2 roles, 1 project, 21 bullets</span>
+                </div>
+                <p style="margin:6px 0 0 23px; font-size:11.5px; line-height:1.55; color:var(--muted);">
+                  This becomes your master profile. Everything on a tailored resume comes from it.
+                </p>
+                <a href="#" style="margin:auto 0 0 23px; font-size:12px; font-weight:600;">Review what we read →</a>
+              </div>
+            </sc-if>
+          </div>
+
+          <!-- card 2 · JD -->
+          <div class="card" style="padding:20px; display:flex; flex-direction:column;">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+              <h2 style="margin:0; font-size:15px; font-weight:640;">Job Description</h2>
+              <div class="seg">
+                <button class="{{segPaste}}" onClick="{{modePaste}}">Paste JD</button>
+                <button class="{{segUpload}}" onClick="{{modeUpload}}">Upload JD</button>
+              </div>
+            </div>
+            <p style="margin:6px 0 16px; font-size:13px; color:var(--muted);">Paste the job description or upload it as a file.</p>
+
+            <sc-if value="{{isPaste}}" hint-placeholder-val="{{ true }}">
+              <textarea class="ta" style="flex:1; min-height:186px; resize:none;" placeholder="Paste the whole posting — the boilerplate gets thrown away." value="{{jd}}" onChange="{{setJd}}"></textarea>
+              <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:9px;">
+                <span style="font-size:11.5px; color:var(--muted);" class="num">{{jdCount}}</span>
+                <span style="font-size:11.5px; color:var(--muted);">{{jdHint}}</span>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{isUpload}}" hint-placeholder-val="{{ false }}">
+              <div class="drop fade" style="flex:1; min-height:186px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; padding:20px;">
+                <span style="width:44px; height:44px; border-radius:4px; background:var(--surface); border:1px solid var(--line); color:var(--accent); display:grid; place-items:center;">
+                  <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15.5V3.5m0 0L8 7.5m4-4 4 4"/><path d="M3.5 15v3.5a2 2 0 0 0 2 2h13a2 2 0 0 0 2-2V15"/></svg>
+                </span>
+                <div style="text-align:center;">
+                  <div style="font-size:13.5px; font-weight:600;">Drop the posting here</div>
+                  <div style="margin-top:3px; font-size:12px; color:var(--muted);">PDF, DOCX or TXT</div>
+                </div>
+                <button class="btn btn-ghost" onClick="{{modePaste}}">Upload JD</button>
+              </div>
+              <div style="margin-top:9px; font-size:11.5px; color:var(--muted);">Or switch to Paste JD to drop the text straight in.</div>
+            </sc-if>
+          </div>
+        </div>
+
+        <!-- optional job details -->
+        <div class="card" style="margin-top:20px; padding:20px;">
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+            <div style="display:flex; align-items:center; gap:10px;">
+              <h2 style="margin:0; font-size:14px; font-weight:640;">Optional job details</h2>
+              <span class="tip">
+                <span class="chip c-kw">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3.2 13.7 9 19.5 10.7 13.7 12.4 12 18.2 10.3 12.4 4.5 10.7 10.3 9 12 3.2z"/></svg>
+                  read from the posting
+                </span>
+                <span class="tipbody">We pulled the company and title straight out of the text you pasted. Correct anything that looks wrong — these are what your tracker will show.</span>
+              </span>
+            </div>
+            <span style="font-size:12px; color:var(--muted);">Helps fill your application tracker later</span>
+          </div>
+
+          <div style="display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:14px; margin-top:16px;">
+            <div>
+              <label style="display:block; font-size:11.5px; font-weight:600; color:var(--muted); margin-bottom:6px;">Company</label>
+              <input class="inp" value="{{company}}" onChange="{{setCompany}}" />
+            </div>
+            <div>
+              <label style="display:block; font-size:11.5px; font-weight:600; color:var(--muted); margin-bottom:6px;">Job Title</label>
+              <input class="inp" value="{{title}}" onChange="{{setTitle}}" />
+            </div>
+            <div>
+              <label style="display:block; font-size:11.5px; font-weight:600; color:var(--muted); margin-bottom:6px;">Job URL</label>
+              <input class="inp" placeholder="https://" value="{{url}}" onChange="{{setUrl}}" />
+            </div>
+          </div>
+        </div>
+
+        <!-- cover letter + CTA -->
+        <div class="card" style="margin-top:20px; padding:20px;">
+          <button onClick="{{toggleCover}}" style="display:flex; align-items:flex-start; gap:12px; width:100%; background:transparent; border:none; padding:0; cursor:pointer; text-align:left; font-family:inherit;">
+            <span class="{{coverBox}}" style="margin-top:1px;">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7"/></svg>
+            </span>
+            <span style="min-width:0;">
+              <span style="display:block; font-size:14px; font-weight:600; color:var(--ink);">Generate a cover letter too</span>
+              <span style="display:block; margin-top:4px; font-size:12.5px; line-height:1.55; color:var(--muted);">
+                Create a customized cover letter based on this job description and your tailored resume.
+              </span>
+            </span>
+          </button>
+
+          <div style="margin-top:20px; padding-top:20px; border-top:1px solid var(--line); display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;">
+            <p style="margin:0; font-size:12.5px; color:var(--muted); max-width:420px;">{{ctaHint}}</p>
+            <button class="btn btn-primary btn-lg" disabled="{{ctaOff}}" onClick="{{runTailor}}">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3.2 13.7 9 19.5 10.7 13.7 12.4 12 18.2 10.3 12.4 4.5 10.7 10.3 9 12 3.2z"/><path d="M18.8 15.4l.6 2 2 .6-2 .6-.6 2-.6-2-2-.6 2-.6.6-2z"/></svg>
+              Tailor My Resume
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+    </sc-if>
+
+    <!-- ─────────── SCREEN 3 · TAILORING ─────────── -->
+    <sc-if value="{{isRunning}}" hint-placeholder-val="{{ false }}">
+    <div class="fadein" style="flex:1; display:grid; place-items:center; padding:40px;">
+      <div class="card" style="width:560px; max-width:100%; padding:34px 34px 28px;">
+
+        <div style="display:flex; align-items:center; gap:14px;">
+          <span style="width:38px; height:38px; flex:0 0 auto; display:grid; place-items:center;">
+            <svg class="spin" width="32" height="32" viewBox="0 0 32 32" fill="none">
+              <circle cx="16" cy="16" r="13" stroke="#e3e8ed" stroke-width="3"/>
+              <path d="M16 3a13 13 0 0 1 13 13" stroke="var(--accent)" stroke-width="3" stroke-linecap="round"/>
+            </svg>
+          </span>
+          <div style="min-width:0;">
+            <h2 style="margin:0; font-size:19px; font-weight:640; letter-spacing:-0.018em;">Recasting your resume…</h2>
+            <p style="margin:4px 0 0; font-size:13px; color:var(--muted);">{{runSubtitle}}</p>
+          </div>
+        </div>
+
+        <div style="height:4px; border-radius:99px; background:#e9edf1; margin:24px 0 4px; overflow:hidden;">
+          <div class="bar-live" style="height:100%; background:var(--accent); border-radius:99px; width:{{runPct}}; transition: width .5s cubic-bezier(.3,.8,.4,1);"></div>
+        </div>
+
+        <div style="margin-top:22px; display:flex; flex-direction:column; gap:2px;">
+          <sc-for list="{{steps}}" as="s" hint-placeholder-count="5"><div style="display:flex; align-items:flex-start; gap:12px; padding:9px 0;"><span class="{{s.iconCls}}" style="width:19px; height:19px; flex:0 0 auto; border-radius:99px; display:grid; place-items:center; margin-top:1px;"><sc-if value="{{s.done}}" hint-placeholder-val="{{ true }}"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7"/></svg></sc-if><sc-if value="{{s.active}}" hint-placeholder-val="{{ false }}"><svg class="spin" width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="5.6" stroke="rgba(255,255,255,.34)" stroke-width="2.4"/><path d="M8 2.4a5.6 5.6 0 0 1 5.6 5.6" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/></svg></sc-if></span><span style="min-width:0; flex:1;"><span class="{{s.textCls}}">{{s.label}}</span><sc-if value="{{s.active}}" hint-placeholder-val="{{ false }}"><span style="display:block; margin-top:3px; font-size:11.5px; color:var(--muted);">{{s.detail}}</span></sc-if></span></div></sc-for>
+        </div>
+
+        <p style="margin:22px 0 0; padding-top:18px; border-top:1px solid var(--line); font-size:12px; line-height:1.55; color:var(--muted);">
+          Nothing is final. You'll see every change next to your original wording, and you can revert any of it.
+        </p>
+      </div>
+    </div>
+    </sc-if>
+
+    <!-- ─────────── SCREEN 4 · RESULTS / EDITOR ─────────── -->
+    <sc-if value="{{isResults}}" hint-placeholder-val="{{ false }}">
+    <div style="flex:1; display:flex; flex-direction:column; min-height:0;">
+
+      <!-- topbar -->
+      <div style="height:64px; flex:0 0 64px; background:var(--surface); border-bottom:1px solid var(--line); display:flex; align-items:center; gap:14px; padding:0 20px 0 14px;">
+        <button class="btn btn-quiet btn-xs" onClick="{{goTailor}}">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
+        </button>
+        <div style="min-width:0;">
+          <div style="font-size:14.5px; font-weight:640; letter-spacing:-0.012em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Data Scientist</div>
+          <div style="font-size:12px; color:var(--muted);">Google · Search Quality</div>
+        </div>
+
+        <sc-if value="{{wantCover}}" hint-placeholder-val="{{ true }}">
+          <div class="seg" style="margin-left:18px;">
+            <button class="{{tabResume}}" onClick="{{showResume}}">Resume</button>
+            <button class="{{tabCover}}" onClick="{{showCover}}">Cover Letter</button>
+          </div>
+        </sc-if>
+
+        <div style="margin-left:auto; display:flex; align-items:center; gap:10px;">
+          <span style="display:inline-flex; align-items:center; gap:6px; font-size:11.5px; color:var(--muted); margin-right:2px;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--good)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7"/></svg>
+            {{savedLabel}}
+          </span>
+          <div class="seg">
+            <button class="{{fmtPdf}}" onClick="{{setPdf}}">PDF</button>
+            <button class="{{fmtDocx}}" onClick="{{setDocx}}">DOCX</button>
+          </div>
+          <button class="btn btn-ghost" onClick="{{saveLibrary}}">{{libLabel}}</button>
+          <button class="btn btn-primary" onClick="{{download}}">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5v11m0 0 4-4m-4 4-4-4"/><path d="M4 17v2a1.8 1.8 0 0 0 1.8 1.8h12.4A1.8 1.8 0 0 0 20 19v-2"/></svg>
+            {{downloadLabel}}
+          </button>
+        </div>
+      </div>
+
+      <!-- body -->
+      <div style="flex:1; display:flex; min-height:0;">
+
+        <!-- ── resume tab ── -->
+        <sc-if value="{{onResumeTab}}" hint-placeholder-val="{{ true }}">
+        <div style="flex:1 1 0; min-width:0; display:flex;">
+
+          <!-- original -->
+          <div style="flex:1 1 0; min-width:0; display:flex; flex-direction:column; border-right:1px solid var(--line);">
+            <div style="height:44px; flex:0 0 44px; display:flex; align-items:center; justify-content:space-between; gap:10px; padding:0 22px; border-bottom:1px solid var(--line); background:var(--ground);">
+              <span style="font-size:12.5px; font-weight:640;">Your Original Resume</span>
+              <span class="chip c-edit">read only</span>
+            </div>
+            <div class="scroll" style="flex:1; padding:26px 22px 40px; background:var(--ground);">
+              <div style="max-width:520px; color:#41505e;">
+                <div style="font-size:16px; font-weight:640; letter-spacing:-0.02em; color:var(--ink);">Aisha Khan</div>
+                <div style="margin-top:4px; font-size:11.5px; color:var(--muted);">Toronto, ON · aisha.khan@email.com · (416) 555-0148</div>
+
+                <div class="eyebrow" style="margin-top:24px; padding-bottom:6px; border-bottom:1px solid var(--line);">Summary</div>
+                <p style="margin:10px 0 0; font-size:13px; line-height:1.62;">Data scientist with 5 years of experience across product analytics and machine learning.</p>
+
+                <div class="eyebrow" style="margin-top:24px; padding-bottom:6px; border-bottom:1px solid var(--line);">Experience</div>
+                <div style="margin-top:12px; display:flex; align-items:baseline; justify-content:space-between; gap:10px;">
+                  <span style="font-size:13px; font-weight:640; color:var(--ink);">Senior Data Scientist, Loop Health</span>
+                  <span style="font-size:11px; color:var(--muted); white-space:nowrap;">2022 – Present</span>
+                </div>
+                <ul style="margin:8px 0 0; padding-left:16px; display:flex; flex-direction:column; gap:7px;">
+                  <li style="font-size:13px; line-height:1.62;">Built and maintained the reporting pipeline used by the clinical operations team.</li>
+                  <li style="font-size:13px; line-height:1.62;">Ran experiments on the patient onboarding flow and reported results to product.</li>
+                  <li style="font-size:13px; line-height:1.62;">Worked with engineers to move several models from notebooks into production.</li>
+                  <li style="font-size:13px; line-height:1.62;">Mentored two junior analysts and ran the weekly analytics review.</li>
+                </ul>
+
+                <div style="margin-top:18px; display:flex; align-items:baseline; justify-content:space-between; gap:10px;">
+                  <span style="font-size:13px; font-weight:640; color:var(--ink);">Data Scientist, Northwind Retail</span>
+                  <span style="font-size:11px; color:var(--muted); white-space:nowrap;">2019 – 2022</span>
+                </div>
+                <ul style="margin:8px 0 0; padding-left:16px; display:flex; flex-direction:column; gap:7px;">
+                  <li style="font-size:13px; line-height:1.62;">Developed forecasting models for inventory planning across 240 stores.</li>
+                  <li style="font-size:13px; line-height:1.62;">Automated a manual weekly reporting process in Python.</li>
+                  <li style="font-size:13px; line-height:1.62;">Partnered with marketing on customer segmentation work.</li>
+                </ul>
+
+                <div class="eyebrow" style="margin-top:24px; padding-bottom:6px; border-bottom:1px solid var(--line);">Projects</div>
+                <div style="margin-top:12px; font-size:13px; font-weight:640; color:var(--ink);">Churn early-warning</div>
+                <div style="margin-top:2px; font-size:11px; color:var(--muted);">Python, XGBoost, Airflow</div>
+                <ul style="margin:8px 0 0; padding-left:16px;">
+                  <li style="font-size:13px; line-height:1.62;">Built a model that flagged accounts likely to lapse.</li>
+                </ul>
+
+                <div class="eyebrow" style="margin-top:24px; padding-bottom:6px; border-bottom:1px solid var(--line);">Skills</div>
+                <p style="margin:10px 0 0; font-size:13px; line-height:1.7;">Python, SQL, pandas, scikit-learn, Tableau, Airflow, dbt, Git, R, Excel</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- recast -->
+          <div style="flex:1.12 1 0; min-width:0; display:flex; flex-direction:column;">
+            <div style="height:44px; flex:0 0 44px; display:flex; align-items:center; justify-content:space-between; gap:10px; padding:0 22px; border-bottom:1px solid var(--line); background:var(--surface);">
+              <span style="font-size:12.5px; font-weight:640;">Your Recast Resume</span>
+              <div style="display:flex; align-items:center; gap:7px;">
+                <span class="chip c-kw">{{changeCount}}</span>
+                <span class="tip">
+                  <span class="chip c-edit" style="cursor:help;">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.6v.1"/></svg>
+                    how to read this
+                  </span>
+                  <span class="tipbody">Highlighted words are keywords from the posting. A left bar marks a line we touched — click any line to edit it, or open the original to compare.</span>
+                </span>
+              </div>
+            </div>
+
+            <div class="scroll" style="flex:1; padding:26px 22px 40px; background:var(--surface);">
+              <div style="max-width:560px;">
+
+                <!-- legend -->
+                <div style="display:flex; flex-wrap:wrap; gap:7px; padding-bottom:18px; margin-bottom:6px; border-bottom:1px solid var(--line);">
+                  <span class="chip c-kw">keyword added</span>
+                  <span class="chip c-edit">rephrased</span>
+                  <span class="chip c-move">moved up</span>
+                  <span class="chip c-emph">emphasized</span>
+                </div>
+
+                <div style="font-size:16px; font-weight:640; letter-spacing:-0.02em;">Aisha Khan</div>
+                <div style="margin-top:4px; font-size:11.5px; color:var(--muted);">Toronto, ON · aisha.khan@email.com · (416) 555-0148</div>
+
+                <div class="eyebrow" style="margin-top:24px; padding-bottom:6px; border-bottom:1px solid var(--line);">Summary</div>
+                <sc-for list="{{summary}}" as="b" hint-placeholder-count="1"><div class="{{b.rowCls}}"><sc-if value="{{b.editing}}" hint-placeholder-val="{{ false }}"><textarea class="ta" rows="3" value="{{b.text}}" onChange="{{b.onChange}}" onBlur="{{b.onBlur}}" style="font-size:13px;"></textarea></sc-if><sc-if value="{{b.notEditing}}" hint-placeholder-val="{{ true }}"><div class="btext" onClick="{{b.onEdit}}"><sc-for list="{{b.parts}}" as="p" hint-placeholder-count="3"><span class="{{p.cls}}">{{p.t}}</span></sc-for></div></sc-if><div style="display:flex; flex-wrap:wrap; align-items:center; gap:6px; margin-top:6px;"><sc-for list="{{b.chips}}" as="c" hint-placeholder-count="2"><span class="{{c.cls}}">{{c.label}}</span></sc-for><sc-if value="{{b.changed}}" hint-placeholder-val="{{ true }}"><button class="btn btn-quiet btn-xs" style="height:19px; padding:0 5px; font-size:10.5px; font-weight:600;" onClick="{{b.onToggleOrig}}">{{b.origLabel}}</button></sc-if></div><sc-if value="{{b.showOrig}}" hint-placeholder-val="{{ false }}"><p class="fade" style="margin:7px 0 0; padding-left:10px; border-left:2px solid var(--line); font-size:12px; line-height:1.6; color:var(--muted);">{{b.orig}}</p></sc-if></div></sc-for>
+
+                <sc-for list="{{sections}}" as="sec" hint-placeholder-count="3"><div style="margin-top:14px;"><sc-if value="{{sec.kicker}}" hint-placeholder-val="{{ true }}"><div class="eyebrow" style="margin-top:10px; margin-bottom:14px; padding-bottom:6px; border-bottom:1px solid var(--line);">{{sec.kickerText}}</div></sc-if><div style="display:flex; align-items:baseline; justify-content:space-between; gap:10px;"><span style="font-size:13px; font-weight:640;">{{sec.head}}</span><span style="font-size:11px; color:var(--muted); white-space:nowrap;">{{sec.meta}}</span></div><div style="margin-top:6px; display:flex; flex-direction:column; gap:2px;"><sc-for list="{{sec.bullets}}" as="b" hint-placeholder-count="3"><div class="{{b.rowCls}}"><div style="display:flex; gap:9px;"><span style="color:#b6c1cc; font-size:13px; line-height:1.62; flex:0 0 auto;">•</span><div style="min-width:0; flex:1;"><sc-if value="{{b.editing}}" hint-placeholder-val="{{ false }}"><textarea class="ta" rows="3" value="{{b.text}}" onChange="{{b.onChange}}" onBlur="{{b.onBlur}}" style="font-size:13px;"></textarea></sc-if><sc-if value="{{b.notEditing}}" hint-placeholder-val="{{ true }}"><div class="btext" onClick="{{b.onEdit}}"><sc-for list="{{b.parts}}" as="p" hint-placeholder-count="3"><span class="{{p.cls}}">{{p.t}}</span></sc-for></div></sc-if><sc-if value="{{b.hasMeta}}" hint-placeholder-val="{{ true }}"><div style="display:flex; flex-wrap:wrap; align-items:center; gap:6px; margin-top:6px;"><sc-for list="{{b.chips}}" as="c" hint-placeholder-count="2"><span class="{{c.cls}}">{{c.label}}</span></sc-for><sc-if value="{{b.changed}}" hint-placeholder-val="{{ true }}"><button class="btn btn-quiet btn-xs" style="height:19px; padding:0 5px; font-size:10.5px; font-weight:600;" onClick="{{b.onToggleOrig}}">{{b.origLabel}}</button></sc-if></div></sc-if><sc-if value="{{b.showOrig}}" hint-placeholder-val="{{ false }}"><p class="fade" style="margin:7px 0 0; padding-left:10px; border-left:2px solid var(--line); font-size:12px; line-height:1.6; color:var(--muted);">{{b.orig}}</p></sc-if></div></div></div></sc-for></div></div></sc-for>
+
+                <div class="eyebrow" style="margin-top:24px; padding-bottom:6px; border-bottom:1px solid var(--line);">Skills</div>
+                <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:12px;">
+                  <sc-for list="{{skills}}" as="s" hint-placeholder-count="8"><span class="{{s.cls}}">{{s.name}}</span></sc-for>
+                </div>
+                <div style="margin-top:10px;"><span class="chip c-emph">reordered · 3 emphasized</span></div>
+
+                <!-- set aside -->
+                <div class="card" style="margin-top:26px; background:var(--ground); padding:14px 16px;">
+                  <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+                    <span style="font-size:12.5px; font-weight:640;">Set aside ({{asideCount}})</span>
+                    <span style="font-size:11px; color:var(--muted);">Nothing is deleted</span>
+                  </div>
+                  <div style="margin-top:10px; display:flex; flex-direction:column; gap:9px;">
+                    <sc-for list="{{aside}}" as="a" hint-placeholder-count="2"><div style="display:flex; align-items:flex-start; gap:10px; padding-top:9px; border-top:1px solid var(--line);"><p style="margin:0; flex:1; font-size:12.5px; line-height:1.55; color:var(--muted);">{{a.text}}</p><button class="btn btn-ghost btn-xs" onClick="{{a.onRestore}}">Put back</button></div></sc-for>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+        </div>
+        </sc-if>
+
+        <!-- ── cover letter tab ── -->
+        <sc-if value="{{onCoverTab}}" hint-placeholder-val="{{ false }}">
+        <div class="fade" style="flex:1 1 0; min-width:0; display:flex; flex-direction:column; background:var(--ground);">
+          <div style="height:44px; flex:0 0 44px; display:flex; align-items:center; justify-content:space-between; gap:10px; padding:0 26px; border-bottom:1px solid var(--line); background:var(--surface);">
+            <span style="font-size:12.5px; font-weight:640;">Cover letter · Data Scientist, Google</span>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span class="chip c-edit">editable</span>
+              <button class="btn btn-ghost btn-xs" onClick="{{regen}}">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11.5A8 8 0 0 0 6.3 6.3L4 8.5"/><path d="M4 4v4.5h4.5"/><path d="M4 12.5a8 8 0 0 0 13.7 5.2L20 15.5"/><path d="M20 20v-4.5h-4.5"/></svg>
+                {{regenLabel}}
+              </button>
+            </div>
+          </div>
+          <div class="scroll" style="flex:1; padding:28px;">
+            <div style="max-width:700px; margin:0 auto;">
+              <div class="card" style="padding:34px 38px;">
+                <textarea class="ta" style="border:none; padding:0; box-shadow:none; font-size:13.5px; line-height:1.78; min-height:520px;" value="{{cover}}" onChange="{{setCover}}"></textarea>
+              </div>
+              <p style="margin:14px 4px 0; font-size:12px; line-height:1.6; color:var(--muted);">
+                Written off your tailored resume, so every claim in here also appears on the resume. Edit it freely — it saves as you type.
+              </p>
+            </div>
+          </div>
+        </div>
+        </sc-if>
+
+        <!-- ── right rail · match summary ── -->
+        <div class="scroll" style="width:300px; flex:0 0 300px; border-left:1px solid var(--line); background:var(--surface); padding:20px 18px 32px;">
+
+          <div class="card" style="padding:18px; background:var(--ground);">
+            <div style="display:flex; align-items:center; gap:16px;">
+              <span style="position:relative; width:78px; height:78px; flex:0 0 auto;">
+                <svg width="78" height="78" viewBox="0 0 80 80" style="transform:rotate(-90deg);">
+                  <circle cx="40" cy="40" r="34" fill="none" stroke="#e3e8ed" stroke-width="7"/>
+                  <circle cx="40" cy="40" r="34" fill="none" stroke="var(--accent)" stroke-width="7" stroke-linecap="round" stroke-dasharray="175.2 213.6"/>
+                </svg>
+                <span class="num" style="position:absolute; inset:0; display:grid; place-items:center; font-size:21px; font-weight:650; letter-spacing:-0.03em;">82%</span>
+              </span>
+              <div style="min-width:0;">
+                <div style="font-size:14px; font-weight:640;">Resume Match</div>
+                <div style="margin-top:4px; font-size:11.5px; line-height:1.5; color:var(--muted);">How much of this posting your resume now speaks to.</div>
+              </div>
+            </div>
+            <p style="margin:14px 0 0; padding-top:12px; border-top:1px solid var(--line); font-size:11px; line-height:1.55; color:var(--muted);">
+              An optimisation indicator, not a promise. No score can guarantee any particular ATS passes your resume through.
+            </p>
+          </div>
+
+          <div style="margin-top:18px; display:flex; flex-direction:column; gap:2px;">
+            <sc-for list="{{breakdown}}" as="k" hint-placeholder-count="4"><div class="card" style="border-color:transparent; background:transparent;"><button onClick="{{k.onToggle}}" style="display:flex; align-items:center; gap:10px; width:100%; padding:11px 10px; background:transparent; border:none; border-radius:4px; cursor:pointer; font-family:inherit; text-align:left;"><span class="{{k.dotCls}}" style="width:7px; height:7px; border-radius:99px; flex:0 0 auto;"></span><span style="flex:1; min-width:0; font-size:13px; font-weight:600;">{{k.label}}</span><span class="num" style="font-size:13px; font-weight:650; color:var(--muted);">{{k.count}}</span><span class="{{k.caretCls}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9aa7b4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></span></button><sc-if value="{{k.open}}" hint-placeholder-val="{{ false }}"><div class="fade" style="padding:2px 10px 14px 27px;"><div style="display:flex; flex-wrap:wrap; gap:5px;"><sc-for list="{{k.items}}" as="i" hint-placeholder-count="4"><span class="{{k.itemCls}}">{{i}}</span></sc-for></div><sc-if value="{{k.hasNote}}" hint-placeholder-val="{{ false }}"><p style="margin:10px 0 0; font-size:11px; line-height:1.55; color:var(--muted);">{{k.note}}</p><button class="btn btn-ghost btn-xs" style="margin-top:9px;" onClick="{{k.onAnswer}}">Answer 2 questions</button></sc-if></div></sc-if></div></sc-for>
+          </div>
+
+          <div class="card" style="margin-top:18px; padding:14px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--good)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2"/><path d="M4.5 12h15"/></svg>
+              <span style="font-size:12.5px; font-weight:640;">What a parser sees</span>
+            </div>
+            <p style="margin:9px 0 0; font-size:11.5px; line-height:1.6; color:var(--muted);">
+              We render the PDF, read it back, and check. <span style="color:var(--good); font-weight:600;">21 of 21 bullets</span> extract cleanly. Email and phone found. 2 pages.
+            </p>
+          </div>
+
+          <button class="btn btn-ghost" style="width:100%; margin-top:18px;" onClick="{{goApps}}">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5.5v13M5.5 12h13"/></svg>
+            Save as an application
+          </button>
+        </div>
+
+      </div>
+    </div>
+    </sc-if>
+
+    <!-- ─────────── SCREEN 5 · DASHBOARD / APPLICATIONS ─────────── -->
+    <sc-if value="{{isDash}}" hint-placeholder-val="{{ false }}">
+    <div class="scroll fade" style="flex:1; padding:32px 36px 48px;">
+      <div style="max-width:1120px; margin:0 auto;">
+
+        <!-- home only: greeting, KPIs, pipeline -->
+        <sc-if value="{{isHome}}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:20px; flex-wrap:wrap;">
+            <div>
+              <h1 style="margin:0; font-size:26px; font-weight:640; letter-spacing:-0.026em;">Good morning, Aisha</h1>
+              <p style="margin:8px 0 0; font-size:14.5px; color:var(--muted);">Here's where your job search stands.</p>
+            </div>
+            <button class="btn btn-primary" onClick="{{addApp}}">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5.5v13M5.5 12h13"/></svg>
+              Add Application
+            </button>
+          </div>
+
+          <div style="display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:16px; margin-top:26px;">
+            <div class="card lift" style="padding:18px;">
+              <div style="display:flex; align-items:flex-start; justify-content:space-between;">
+                <span style="font-size:12.5px; font-weight:600; color:var(--muted);">Applications</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#b6c1cc" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 10h17M8 3.5v3M16 3.5v3"/></svg>
+              </div>
+              <div class="num" style="margin-top:10px; font-size:32px; font-weight:650; letter-spacing:-0.03em; line-height:1;">24</div>
+              <div style="margin-top:8px; font-size:11.5px; color:var(--muted);">3 added this week</div>
+            </div>
+            <div class="card lift" style="padding:18px;">
+              <div style="display:flex; align-items:flex-start; justify-content:space-between;">
+                <span style="font-size:12.5px; font-weight:600; color:var(--muted);">In Progress</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#b6c1cc" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7v5.2l3.2 1.9"/></svg>
+              </div>
+              <div class="num" style="margin-top:10px; font-size:32px; font-weight:650; letter-spacing:-0.03em; line-height:1;">8</div>
+              <div style="margin-top:8px; font-size:11.5px; color:var(--muted);">2 waiting on a reply</div>
+            </div>
+            <div class="card lift" style="padding:18px;">
+              <div style="display:flex; align-items:flex-start; justify-content:space-between;">
+                <span style="font-size:12.5px; font-weight:600; color:var(--muted);">Interviews</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#b6c1cc" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 6.5A2 2 0 0 1 6.5 4.5h11a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H10l-4 3.5V15.5H6.5a2 2 0 0 1-2-2z"/></svg>
+              </div>
+              <div class="num" style="margin-top:10px; font-size:32px; font-weight:650; letter-spacing:-0.03em; line-height:1;">5</div>
+              <div style="margin-top:8px; font-size:11.5px; color:var(--muted);">Next: Google, Sept 5</div>
+            </div>
+            <div class="card lift" style="padding:18px;">
+              <div style="display:flex; align-items:flex-start; justify-content:space-between;">
+                <span style="font-size:12.5px; font-weight:600; color:var(--muted);">Offers</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#b6c1cc" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5 14.6 9l6 .9-4.3 4.2 1 6-5.3-2.8L6.7 20l1-6L3.4 9.9 9.4 9z"/></svg>
+              </div>
+              <div class="num" style="margin-top:10px; font-size:32px; font-weight:650; letter-spacing:-0.03em; line-height:1; color:var(--good);">1</div>
+              <div style="margin-top:8px; font-size:11.5px; color:var(--muted);">Respond by Sept 4</div>
+            </div>
+          </div>
+
+          <div class="card" style="margin-top:20px; padding:20px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+              <h2 style="margin:0; font-size:14px; font-weight:640;">Pipeline</h2>
+              <span style="font-size:11.5px; color:var(--muted);">{{pipeNote}}</span>
+            </div>
+            <div style="display:flex; align-items:stretch; gap:0; margin-top:16px;">
+              <sc-for list="{{stages}}" as="st" hint-placeholder-count="6"><button class="{{st.cls}}" onClick="{{st.onPick}}"><span class="num" style="display:block; font-size:22px; font-weight:650; letter-spacing:-0.028em; line-height:1;">{{st.count}}</span><span style="display:block; margin-top:6px; font-size:11.5px; font-weight:600; color:var(--muted);">{{st.name}}</span><span style="display:block; margin-top:9px; height:3px; border-radius:99px; background:#e9edf1; overflow:hidden;"><span class="{{st.barCls}}" style="display:block; height:100%; border-radius:99px; width:{{st.pct}};"></span></span></button><sc-if value="{{st.arrow}}" hint-placeholder-val="{{ true }}"><span style="flex:0 0 22px; display:grid; place-items:center; color:#c8d2dc;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M13 6l6 6-6 6"/></svg></span></sc-if></sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- applications list header -->
+        <sc-if value="{{isAppsList}}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:20px; flex-wrap:wrap;">
+            <div>
+              <h1 style="margin:0; font-size:26px; font-weight:640; letter-spacing:-0.026em;">My Applications</h1>
+              <p style="margin:8px 0 0; font-size:14.5px; color:var(--muted);">Every role you've tailored for, and what happens next.</p>
+            </div>
+            <button class="btn btn-primary" onClick="{{addApp}}">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5.5v13M5.5 12h13"/></svg>
+              Add Application
+            </button>
+          </div>
+          <div style="display:flex; flex-wrap:wrap; gap:7px; margin-top:22px;">
+            <sc-for list="{{filters}}" as="f" hint-placeholder-count="7"><button class="{{f.cls}}" onClick="{{f.onPick}}">{{f.label}}<span class="num" style="margin-left:6px; opacity:.62;">{{f.count}}</span></button></sc-for>
+          </div>
+        </sc-if>
+
+        <!-- table -->
+        <div class="card" style="margin-top:20px; overflow:hidden;">
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:15px 18px; border-bottom:1px solid var(--line);">
+            <h2 style="margin:0; font-size:14px; font-weight:640;">{{tableTitle}}</h2>
+            <div style="display:flex; align-items:center; gap:10px;">
+              <sc-if value="{{filtered}}" hint-placeholder-val="{{ false }}">
+                <button class="btn btn-quiet btn-xs" onClick="{{clearFilter}}">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
+                  Clear filter
+                </button>
+              </sc-if>
+              <span style="font-size:11.5px; color:var(--muted);" class="num">{{rowCount}}</span>
+            </div>
+          </div>
+
+          <div style="display:flex; align-items:center; gap:14px; padding:0 18px; height:34px; background:var(--ground); border-bottom:1px solid var(--line);">
+            <span style="flex:1 1 0; min-width:0; font-size:10.5px; font-weight:650; letter-spacing:.07em; text-transform:uppercase; color:var(--muted);">Job</span>
+            <span style="flex:0 0 132px; font-size:10.5px; font-weight:650; letter-spacing:.07em; text-transform:uppercase; color:var(--muted);">Company</span>
+            <span style="flex:0 0 104px; font-size:10.5px; font-weight:650; letter-spacing:.07em; text-transform:uppercase; color:var(--muted);">Resume</span>
+            <span style="flex:0 0 92px; font-size:10.5px; font-weight:650; letter-spacing:.07em; text-transform:uppercase; color:var(--muted);">Applied On</span>
+            <span style="flex:0 0 124px; font-size:10.5px; font-weight:650; letter-spacing:.07em; text-transform:uppercase; color:var(--muted);">Status</span>
+            <span style="flex:0 0 168px; font-size:10.5px; font-weight:650; letter-spacing:.07em; text-transform:uppercase; color:var(--muted);">Next Step</span>
+            <span style="flex:0 0 62px;"></span>
+          </div>
+
+          <sc-for list="{{rows}}" as="r" hint-placeholder-count="6"><div class="trow" onClick="{{r.onOpen}}" style="display:flex; align-items:center; gap:14px; padding:0 18px; height:54px; border-bottom:1px solid var(--line);"><span style="flex:1 1 0; min-width:0; font-size:13.5px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{r.role}}</span><span style="flex:0 0 132px; min-width:0; display:flex; align-items:center; gap:8px;"><span class="{{r.logoCls}}" style="width:22px; height:22px; border-radius:4px; display:grid; place-items:center; font-size:10px; font-weight:700; flex:0 0 auto;">{{r.initial}}</span><span style="font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{r.company}}</span></span><span class="num" style="flex:0 0 104px; font-size:12.5px; color:var(--muted);">{{r.resume}}</span><span class="num" style="flex:0 0 92px; font-size:12.5px; color:var(--muted);">{{r.applied}}</span><span style="flex:0 0 124px;"><span class="{{r.pillCls}}"><span class="dot"></span>{{r.status}}</span></span><span style="flex:0 0 168px; min-width:0; font-size:12.5px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{r.next}}</span><span class="acts" style="flex:0 0 62px; display:flex; gap:4px; justify-content:flex-end;"><span class="tip"><button class="btn btn-quiet btn-xs" style="width:26px; padding:0;" onClick="{{r.onResume}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg></button><span class="tipbody" style="width:140px;">Open the tailored resume</span></span><span class="tip"><button class="btn btn-quiet btn-xs" style="width:26px; padding:0;" onClick="{{r.onCover}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5.5" width="17" height="13" rx="2"/><path d="m4 7.5 8 5.6 8-5.6"/></svg></button><span class="tipbody" style="width:140px;">{{r.coverTip}}</span></span></span></div></sc-for>
+
+          <sc-if value="{{showMore}}" hint-placeholder-val="{{ false }}">
+            <button onClick="{{viewAll}}" style="display:flex; align-items:center; justify-content:center; gap:7px; width:100%; height:47px; background:transparent; border:none; cursor:pointer; font-family:inherit; font-size:12.5px; font-weight:600; color:var(--accent);">
+              View all 24 applications
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M13 6l6 6-6 6"/></svg>
+            </button>
+          </sc-if>
+
+          <sc-if value="{{noRows}}" hint-placeholder-val="{{ false }}">
+            <div style="padding:52px 20px; text-align:center;">
+              <p style="margin:0; font-size:13.5px; font-weight:600;">Nothing at this stage yet.</p>
+              <p style="margin:6px 0 0; font-size:12.5px; color:var(--muted);">Move an application here from its detail panel, or clear the filter.</p>
+              <button class="btn btn-ghost" style="margin-top:16px;" onClick="{{clearFilter}}">Show all applications</button>
+            </div>
+          </sc-if>
+        </div>
+
+      </div>
+    </div>
+    </sc-if>
+
+    <!-- ─────────── RESUME LIBRARY ─────────── -->
+    <sc-if value="{{isLibrary}}" hint-placeholder-val="{{ false }}">
+    <div class="scroll fade" style="flex:1; padding:32px 36px 48px;">
+      <div style="max-width:1120px; margin:0 auto;">
+        <h1 style="margin:0; font-size:26px; font-weight:640; letter-spacing:-0.026em;">Resume Library</h1>
+        <p style="margin:8px 0 0; font-size:14.5px; color:var(--muted);">Every version Recast has produced, and the master profile they all come from.</p>
+
+        <div class="card" style="margin-top:26px; padding:20px; border-color:var(--aline); background:var(--tint);">
+          <div style="display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
+            <span style="width:40px; height:40px; border-radius:4px; background:var(--surface); border:1px solid var(--aline); color:var(--accent); display:grid; place-items:center; flex:0 0 auto;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8.5" r="3.8"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/></svg>
+            </span>
+            <div style="flex:1; min-width:200px;">
+              <div style="font-size:14.5px; font-weight:640;">Master profile</div>
+              <div style="margin-top:3px; font-size:12.5px; color:var(--muted);">2 roles · 1 project · 21 bullets · 12 skills — imported from aisha-khan-resume.pdf</div>
+            </div>
+            <button class="btn btn-ghost" onClick="{{goSoon}}">Review profile</button>
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:16px; margin-top:20px;">
+          <sc-for list="{{library}}" as="v" hint-placeholder-count="6"><div class="card lift" style="padding:16px; cursor:pointer;" onClick="{{v.onOpen}}"><div style="background:var(--ground); border:1px solid var(--line); border-radius:3px; padding:13px; display:flex; flex-direction:column; gap:6px; height:96px; overflow:hidden;"><span class="ln-d" style="display:block; height:6px; border-radius:2px; background:#c3ccd6; width:46%;"></span><span style="display:block; height:5px; border-radius:2px; background:#e3e8ed; width:92%;"></span><span class="{{v.hlCls}}" style="display:block; height:5px; border-radius:2px; width:80%;"></span><span style="display:block; height:5px; border-radius:2px; background:#e3e8ed; width:88%;"></span><span class="{{v.hlCls}}" style="display:block; height:5px; border-radius:2px; width:70%;"></span><span style="display:block; height:5px; border-radius:2px; background:#e3e8ed; width:84%;"></span></div><div style="margin-top:13px; display:flex; align-items:baseline; justify-content:space-between; gap:8px;"><span style="font-size:13.5px; font-weight:640;">{{v.name}}</span><span class="num" style="font-size:11.5px; font-weight:600; color:var(--accent);">{{v.match}}</span></div><div style="margin-top:3px; font-size:12px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{v.role}}</div><div class="num" style="margin-top:9px; padding-top:9px; border-top:1px solid var(--line); font-size:11px; color:var(--muted);">{{v.meta}}</div></div></sc-for>
+        </div>
+      </div>
+    </div>
+    </sc-if>
+
+    <!-- ─────────── NOT IN THIS PROTOTYPE ─────────── -->
+    <sc-if value="{{isSoon}}" hint-placeholder-val="{{ false }}">
+    <div class="fadein" style="flex:1; display:grid; place-items:center; padding:40px;">
+      <div style="text-align:center; max-width:340px;">
+        <span style="width:44px; height:44px; margin:0 auto; border-radius:4px; background:var(--surface); border:1px solid var(--line); color:#b6c1cc; display:grid; place-items:center;">
+          <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7v5.2l3.2 1.9"/></svg>
+        </span>
+        <p style="margin:16px 0 0; font-size:14px; font-weight:600;">Not part of this prototype</p>
+        <p style="margin:6px 0 0; font-size:12.5px; line-height:1.6; color:var(--muted);">Profile and Settings are wired in the real app. Head back to the flow that is.</p>
+        <button class="btn btn-ghost" style="margin-top:16px;" onClick="{{goTailor}}">Back to Tailor Resume</button>
+      </div>
+    </div>
+    </sc-if>
+
+    <!-- ─────────── APPLICATION DETAIL DRAWER ─────────── -->
+    <sc-if value="{{drawerOpen}}" hint-placeholder-val="{{ false }}">
+    <div class="fadein" style="position:absolute; inset:0; z-index:40; display:flex; justify-content:flex-end;">
+      <div onClick="{{closeDrawer}}" style="position:absolute; inset:0; background:rgba(19,28,37,.30); backdrop-filter:blur(1px);"></div>
+      <div class="slide scroll" style="position:relative; width:472px; max-width:100%; background:var(--surface); border-left:1px solid var(--line); box-shadow:-24px 0 56px -28px rgba(19,28,37,.5);">
+
+        <div style="position:sticky; top:0; background:var(--surface); border-bottom:1px solid var(--line); padding:18px 22px; z-index:2;">
+          <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px;">
+            <div style="min-width:0;">
+              <div style="font-size:17px; font-weight:640; letter-spacing:-0.018em;">{{d.role}}</div>
+              <div style="margin-top:4px; display:flex; align-items:center; gap:8px;">
+                <span class="{{d.logoCls}}" style="width:20px; height:20px; border-radius:4px; display:grid; place-items:center; font-size:9.5px; font-weight:700;">{{d.initial}}</span>
+                <span style="font-size:13px; color:var(--muted);">{{d.company}}</span>
+              </div>
+            </div>
+            <button class="btn btn-quiet btn-xs" style="width:28px; padding:0;" onClick="{{closeDrawer}}">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
+            </button>
+          </div>
+
+          <div style="display:flex; align-items:center; gap:8px; margin-top:14px;">
+            <span style="font-size:11.5px; font-weight:600; color:var(--muted);">Status</span>
+            <select class="inp" style="width:auto; height:30px; font-size:12.5px; font-weight:600; padding:0 8px;" value="{{d.status}}" onChange="{{setStatus}}">
+              <sc-for list="{{statusOptions}}" as="o" hint-placeholder-count="7"><option value="{{o}}">{{o}}</option></sc-for>
+            </select>
+            <span style="margin-left:auto; font-size:11.5px; color:var(--muted);">{{d.updated}}</span>
+          </div>
+        </div>
+
+        <div style="padding:20px 22px 26px;">
+
+          <div class="card" style="padding:0; overflow:hidden;">
+            <div style="display:flex; border-bottom:1px solid var(--line);">
+              <div style="flex:1; padding:12px 14px;">
+                <div style="font-size:10.5px; font-weight:650; letter-spacing:.07em; text-transform:uppercase; color:var(--muted);">Applied on</div>
+                <div class="num" style="margin-top:5px; font-size:13px; font-weight:600;">{{d.applied}}</div>
+              </div>
+              <div style="flex:1; padding:12px 14px; border-left:1px solid var(--line);">
+                <div style="font-size:10.5px; font-weight:650; letter-spacing:.07em; text-transform:uppercase; color:var(--muted);">Match</div>
+                <div class="num" style="margin-top:5px; font-size:13px; font-weight:600; color:var(--accent);">{{d.match}}</div>
+              </div>
+            </div>
+            <div style="display:flex;">
+              <button onClick="{{openResume}}" style="flex:1; display:flex; align-items:center; gap:9px; padding:12px 14px; background:transparent; border:none; cursor:pointer; font-family:inherit; text-align:left;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto;"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg>
+                <span style="min-width:0;">
+                  <span style="display:block; font-size:12.5px; font-weight:600; color:var(--ink);">{{d.resume}}</span>
+                  <span style="display:block; font-size:11px; color:var(--muted);">Tailored resume</span>
+                </span>
+              </button>
+              <button onClick="{{openCover}}" style="flex:1; display:flex; align-items:center; gap:9px; padding:12px 14px; background:transparent; border:none; border-left:1px solid var(--line); cursor:pointer; font-family:inherit; text-align:left;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto;"><rect x="3.5" y="5.5" width="17" height="13" rx="2"/><path d="m4 7.5 8 5.6 8-5.6"/></svg>
+                <span style="min-width:0;">
+                  <span style="display:block; font-size:12.5px; font-weight:600; color:var(--ink);">{{d.coverLabel}}</span>
+                  <span style="display:block; font-size:11px; color:var(--muted);">Cover letter</span>
+                </span>
+              </button>
+            </div>
+          </div>
+
+          <div class="card" style="margin-top:16px; padding:14px 16px; background:var(--tint); border-color:var(--aline);">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+              <span style="font-size:11px; font-weight:650; letter-spacing:.07em; text-transform:uppercase; color:var(--accent);">Next action</span>
+              <button class="btn btn-quiet btn-xs" style="color:var(--accent);" onClick="{{noop}}">Edit</button>
+            </div>
+            <div style="margin-top:8px; font-size:13.5px; font-weight:600;">{{d.next}}</div>
+            <div style="margin-top:3px; font-size:12px; color:var(--muted);">{{d.nextWhen}}</div>
+          </div>
+
+          <div style="margin-top:22px;">
+            <div class="eyebrow">Job description</div>
+            <p style="margin:9px 0 0; font-size:12.5px; line-height:1.65; color:var(--muted); white-space:pre-line;">{{d.jd}}</p>
+            <button class="btn btn-quiet btn-xs" style="margin-top:7px; padding:0; color:var(--accent);" onClick="{{noop}}">View the full posting →</button>
+          </div>
+
+          <div style="margin-top:22px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+              <span class="eyebrow">Notes</span>
+              <span style="font-size:11px; color:var(--muted);">{{noteSaved}}</span>
+            </div>
+            <textarea class="ta" style="margin-top:9px; min-height:88px;" placeholder="Recruiter name, salary range, who you spoke to…" value="{{notes}}" onChange="{{setNotes}}"></textarea>
+          </div>
+
+          <div style="margin-top:22px;">
+            <div class="eyebrow">Timeline</div>
+            <div style="margin-top:12px; display:flex; flex-direction:column;">
+              <sc-for list="{{d.timeline}}" as="t" hint-placeholder-count="4"><div style="display:flex; gap:12px;"><span style="flex:0 0 auto; display:flex; flex-direction:column; align-items:center;"><span class="{{t.dotCls}}" style="width:9px; height:9px; border-radius:99px; margin-top:4px;"></span><span class="{{t.lineCls}}" style="width:1.5px; flex:1;"></span></span><span style="min-width:0; flex:1; padding-bottom:14px;"><span style="display:block; font-size:12.5px; font-weight:600;">{{t.label}}</span><span class="num" style="display:block; margin-top:2px; font-size:11.5px; color:var(--muted);">{{t.when}}</span></span></div></sc-for>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+    </sc-if>
+
+    <!-- ─────────── TOAST ─────────── -->
+    <sc-if value="{{hasToast}}" hint-placeholder-val="{{ false }}">
+      <div class="slide" style="position:absolute; right:24px; bottom:24px; z-index:60; display:flex; align-items:center; gap:11px; background:#131c25; color:#fff; padding:12px 16px; border-radius:4px; box-shadow:0 16px 40px -18px rgba(0,0,0,.6);">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5fc2a6" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7"/></svg>
+        <span style="font-size:13px; font-weight:600;">{{toast}}</span>
+      </div>
+    </sc-if>
+
+  </main>
+</div>
+</x-dc>
+
+<script data-dc-script data-props='{"accent":{"editor":"color","default":"#1d4e79","options":["#1d4e79","#1b62c4","#1f6f5c","#131c25"],"section":"Brand"},"startView":{"editor":"enum","default":"tailor","options":["tailor","tailoring","results","home","applications","library"],"section":"Prototype"},"$preview":{"width":1440,"height":940}}'>
+/* Recast — connected product prototype.
+   One artboard holds screens 2 to 5 because artboards share no state at runtime;
+   the whole journey has to live in one component to actually be clickable. */
+
+const JD_TEXT = "Data Scientist, Search Quality — Mountain View, CA\n\nMinimum qualifications\n- Bachelor's degree in Statistics, Mathematics, Computer Science or a related quantitative field.\n- 4 years of experience in data analysis, applied statistics or a related role.\n- Experience with Python and SQL.\n\nPreferred qualifications\n- Experience designing and analysing A/B tests, including sequential methods.\n- Familiarity with causal inference techniques.\n- Experience taking models from prototype into production serving.\n- Experience building and maintaining data pipelines (Airflow or similar).\n\nAbout the job\nYou will partner with engineering and product teams to measure the quality of Search results, design experiments that isolate the effect of ranking changes, and communicate results and rollout decisions to the people who make them.";
+
+const COVER_TEXT = "Dear Hiring Team,\n\nI'm applying for the Data Scientist role on Search Quality. Most of my last three years has been experiment work: designing and running A/B tests on a patient onboarding flow at Loop Health, then reporting the results — and the rollout decisions that followed — to product.\n\nBefore that I built forecasting models for inventory planning across 240 stores at Northwind Retail, and automated the weekly reporting that team had been doing by hand.\n\nThe part of this posting I'd point to is moving models out of notebooks. I've done that alongside engineers rather than handing work over to them, which is most of why those models survived contact with production.\n\nI'd welcome the chance to talk about the ranking work.\n\nAisha Khan";
+
+const BULLETS = {
+  sum: { text: "Data scientist with 5 years running A/B tests and moving models into production serving, across product analytics and machine learning.",
+         orig: "Data scientist with 5 years of experience across product analytics and machine learning.",
+         chips: [["rephrased", "c-edit"], ["+2 keywords", "c-kw"]] },
+  b1:  { text: "Designed and ran A/B tests on the patient onboarding flow, reporting results and the rollout decisions that followed to product.",
+         orig: "Ran experiments on the patient onboarding flow and reported results to product.",
+         chips: [["moved up", "c-move"], ["rephrased", "c-edit"], ["+2 keywords", "c-kw"]] },
+  b2:  { text: "Partnered with engineers to move models from notebooks into production serving.",
+         orig: "Worked with engineers to move several models from notebooks into production.",
+         chips: [["moved up", "c-move"], ["rephrased", "c-edit"]] },
+  b3:  { text: "Built and maintained the Airflow reporting pipeline used by the clinical operations team.",
+         orig: "Built and maintained the reporting pipeline used by the clinical operations team.",
+         chips: [["+1 keyword", "c-kw"]] },
+  b4:  { text: "Developed forecasting models for inventory planning across 240 stores.",
+         orig: "Developed forecasting models for inventory planning across 240 stores.",
+         chips: [] },
+  b5:  { text: "Automated a manual weekly reporting process in Python and SQL.",
+         orig: "Automated a manual weekly reporting process in Python.",
+         chips: [["+1 keyword", "c-kw"]] },
+  b6:  { text: "Built a model that flagged accounts likely to lapse.",
+         orig: "Built a model that flagged accounts likely to lapse.",
+         chips: [] },
+};
+
+const ASIDE = [
+  "Mentored two junior analysts and ran the weekly analytics review.",
+  "Partnered with marketing on customer segmentation work.",
+];
+
+const SKILLS = [
+  ["Python", 1], ["SQL", 1], ["A/B testing", 1],
+  ["pandas", 0], ["scikit-learn", 0], ["Airflow", 0], ["dbt", 0], ["XGBoost", 0],
+  ["Tableau", 0], ["Git", 0], ["R", -1], ["Excel", -1],
+];
+
+const STEP_DEFS = [
+  ["Reading your resume",            "2 roles, 1 project, 21 bullets"],
+  ["Understanding the job description", "14 requirements, 9 of them must-haves"],
+  ["Matching relevant experience",   "Scoring each of your bullets against the posting"],
+  ["Optimizing keywords",            "Rephrasing inside your own claims — no new facts"],
+  ["Preparing your tailored resume", "Rendering, then reading the PDF back to check it"],
+];
+
+/* role, company, resume, saved, applied, stage, statusWhen, next, nextWhen, cover, match */
+const APPS = [
+  ["Data Scientist","Google","Recast v3","Aug 26","Aug 28","interviewing","Aug 30","Onsite panel","Thursday, September 5 · 10:00",1,"82%"],
+  ["Research Scientist","Anthropic","Recast v3","Aug 25","Aug 27","screening","Aug 29","Take-home due","September 2",1,"74%"],
+  ["ML Platform Engineer","Ramp","—","Aug 29","—","draft","—","Finish tailoring","No date set",0,"—"],
+  ["Applied Scientist","Stripe","Recast v2","Aug 24","Aug 26","applied","Aug 26","Follow up","September 3",1,"78%"],
+  ["ML Engineer","Microsoft","Recast v2","Aug 23","Aug 25","applied","Aug 25","Follow up","September 1",1,"71%"],
+  ["Data Scientist, Growth","Notion","Recast v3","Aug 20","Aug 22","interviewing","Aug 28","Onsite","September 8",1,"80%"],
+  ["Senior Data Scientist","Figma","Recast v1","Aug 10","Aug 12","offer","Aug 30","Respond by","September 4",0,"69%"],
+  ["Data Scientist","Shopify","Recast v3","Aug 22","Aug 24","applied","Aug 24","Follow up","September 2",1,"77%"],
+  ["Senior Data Scientist","Klarna","Recast v2","Aug 20","Aug 22","screening","Aug 27","Recruiter call","September 3",1,"73%"],
+  ["Data Scientist, Ads","Reddit","—","Aug 29","—","draft","—","Finish tailoring","No date set",0,"—"],
+  ["Product Data Scientist","Duolingo","Recast v3","Aug 21","Aug 23","applied","Aug 23","Follow up","September 1",1,"79%"],
+  ["ML Engineer","Cohere","Recast v2","Aug 17","Aug 19","interviewing","Aug 26","Final round","September 9",1,"75%"],
+  ["Data Scientist, Core","Spotify","Recast v3","Aug 18","Aug 20","screening","Aug 25","Waiting on scheduling","No date set",1,"76%"],
+  ["Machine Learning Engineer","Databricks","Recast v2","Aug 19","Aug 21","applied","Aug 21","Follow up","September 2",1,"70%"],
+  ["Data Analyst","Airbnb","Recast v1","Aug 18","Aug 20","rejected","Aug 29","—","",0,"61%"],
+  ["Data Scientist","Wise","Recast v1","Aug 14","Aug 16","interviewing","Aug 27","Hiring manager","September 4",0,"68%"],
+  ["Data Scientist, Trust","Discord","Recast v3","Aug 17","Aug 19","applied","Aug 19","Follow up","September 1",1,"75%"],
+  ["Quantitative Analyst","Wealthsimple","Recast v1","Aug 30","—","draft","—","Review and send","No date set",0,"64%"],
+  ["Decision Scientist","Wayfair","Recast v1","Aug 16","Aug 18","applied","Aug 18","Follow up","September 1",0,"66%"],
+  ["Applied Scientist","Zalando","Recast v2","Aug 12","Aug 14","screening","Aug 24","Take-home due","September 6",1,"72%"],
+  ["Staff Data Scientist","Miro","Recast v3","Aug 11","Aug 13","interviewing","Aug 26","Case study","September 10",1,"81%"],
+  ["Data Scientist","Instacart","Recast v3","Aug 13","Aug 15","applied","Aug 15","Nudge recruiter","September 2",1,"74%"],
+  ["Data Scientist","Uber","Recast v1","Aug 9","Aug 11","rejected","Aug 26","—","",0,"59%"],
+  ["Analytics Engineer","Asana","Recast v2","Aug 6","Aug 8","rejected","Aug 22","—","",0,"63%"],
+];
+
+const JDS = {
+  "Google": "Search Quality · Mountain View, CA\nDesign experiments that isolate the effect of ranking changes and communicate results to the people making the call. Python and SQL required; A/B testing and causal inference preferred.",
+  "Anthropic": "Societal Impacts · San Francisco, CA\nDesign and run empirical studies on model behaviour, and turn the findings into things other teams can act on. Strong statistics and Python; experience with experiment design preferred.",
+  "Ramp": "ML Platform · New York, NY\nBuild and operate the serving infrastructure behind fraud and underwriting models. Python, Airflow, and production ownership. Prior data science partnership a plus.",
+  "Stripe": "Risk Intelligence · Remote (US)\nBuild models that separate good users from bad at signup, and measure the tradeoff honestly. Python, SQL, and comfort with causal questions where an A/B test isn't available.",
+  "Microsoft": "M365 Copilot · Redmond, WA\nTrain and evaluate models that rank and summarise enterprise content. Experience taking models to production and instrumenting them once there.",
+  "Notion": "Growth · San Francisco, CA\nOwn the experiment programme for activation and conversion. Design tests, call them, and tell the team what the result actually means.",
+};
+
+const STAGE_META = {
+  draft:        { name: "Draft",        label: "Draft" },
+  applied:      { name: "Applied",      label: "Applied" },
+  screening:    { name: "Screening",    label: "Screening" },
+  interviewing: { name: "Interviewing", label: "Interviewing" },
+  offer:        { name: "Offer",        label: "Offer" },
+  rejected:     { name: "Rejected",     label: "Rejected" },
+};
+const STAGE_ORDER = ["draft", "applied", "screening", "interviewing", "offer", "rejected"];
+const STATUS_OPTIONS = ["Draft", "Applied", "Screening", "Interviewing", "Offer", "Rejected", "Withdrawn"];
+
+const BREAKDOWN = [
+  { key: "strong", label: "Strong matches", dot: "kd-a", items: ["Python", "SQL", "experimentation", "production ML", "data pipelines", "stakeholder reporting"] },
+  { key: "emph",   label: "Skills emphasized", dot: "kd-a", items: ["Python", "SQL", "A/B testing"] },
+  { key: "kw",     label: "Keywords added", dot: "kd-a", items: ["A/B tests", "Airflow", "production serving", "rollout decisions", "SQL"] },
+  { key: "gaps",   label: "Potential gaps", dot: "kd-w", items: ["causal inference", "Terraform"],
+    note: "The posting asks for these and your profile can't evidence them yet. Answering two questions turns them into bullets in your own words — nothing gets added without you." },
+];
+
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = {
+      nav: "tailor", view: "tailor",
+      resume: false, jdMode: "paste", jd: JD_TEXT,
+      company: "Google", title: "Data Scientist", url: "",
+      wantCover: true,
+      step: 0,
+      tab: "resume", fmt: "pdf", saved: true, libSaved: false, regenerating: false,
+      cover: COVER_TEXT,
+      text: {}, editing: null, orig: {}, aside: [0, 1],
+      open: null,
+      filter: null, drawer: null, statusOverride: {}, notes: {},
+      toast: null,
+    };
+  }
+
+  componentDidMount() {
+    const s = this.props.startView;
+    if (s === "results")      this.setState({ nav: "tailor", view: "results", resume: true });
+    else if (s === "tailoring") { this.setState({ nav: "tailor", view: "tailoring", resume: true, step: 2 }); this.runSteps(2); }
+    else if (s === "home")    this.setState({ nav: "home", view: "dash" });
+    else if (s === "applications") this.setState({ nav: "apps", view: "dash" });
+    else if (s === "library") this.setState({ nav: "library", view: "library" });
+  }
+
+  componentWillUnmount() { clearInterval(this.timer); clearTimeout(this.toastTimer); clearTimeout(this.regenTimer); }
+
+  /* ── flow ─────────────────────────────────────────────── */
+  runSteps(from) {
+    clearInterval(this.timer);
+    let i = from || 0;
+    this.timer = setInterval(() => {
+      i += 1;
+      if (i >= STEP_DEFS.length) {
+        clearInterval(this.timer);
+        this.setState({ view: "results", tab: "resume", step: STEP_DEFS.length });
+      } else {
+        this.setState({ step: i });
+      }
+    }, 1000);
+  }
+
+  flash(msg) {
+    clearTimeout(this.toastTimer);
+    this.setState({ toast: msg });
+    this.toastTimer = setTimeout(() => this.setState({ toast: null }), 2600);
+  }
+
+  go(nav, view) { this.setState({ nav, view, drawer: null }); }
+
+  /* ── change marking ───────────────────────────────────── */
+  mark(text) {
+    const kws = ["A/B testing", "A/B tests", "production serving", "rollout decisions", "Airflow", "SQL"];
+    const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const re = new RegExp("(" + kws.map(esc).join("|") + ")", "g");
+    const out = [];
+    let last = 0, m;
+    while ((m = re.exec(text)) !== null) {
+      if (m.index > last) out.push({ t: text.slice(last, m.index), cls: "" });
+      out.push({ t: m[0], cls: "mk" });
+      last = m.index + m[0].length;
+    }
+    if (last < text.length) out.push({ t: text.slice(last), cls: "" });
+    return out.length ? out : [{ t: text, cls: "" }];
+  }
+
+  bullet(id) {
+    const def = BULLETS[id];
+    const text = this.state.text[id] !== undefined ? this.state.text[id] : def.text;
+    const changed = text.trim() !== def.orig.trim();
+    const editing = this.state.editing === id;
+    const showOrig = !!this.state.orig[id];
+    return {
+      text, orig: def.orig,
+      parts: this.mark(text),
+      chips: def.chips.map((c) => ({ label: c[0], cls: "chip " + c[1] })),
+      changed, editing, notEditing: !editing,
+      hasMeta: def.chips.length > 0 || changed,
+      showOrig,
+      origLabel: showOrig ? "hide original" : "show original",
+      rowCls: changed ? "brow changed" : "brow",
+      onEdit: () => this.setState({ editing: id }),
+      onChange: (e) => { const v = e.target.value; this.setState((s) => ({ text: { ...s.text, [id]: v }, saved: false })); setTimeout(() => this.setState({ saved: true }), 700); },
+      onBlur: () => this.setState({ editing: null }),
+      onToggleOrig: () => this.setState((s) => ({ orig: { ...s.orig, [id]: !s.orig[id] } })),
+    };
+  }
+
+  /* ── applications ─────────────────────────────────────── */
+  app(i) {
+    const a = APPS[i];
+    const stage = this.state.statusOverride[i] || a[5];
+    return { i, role: a[0], company: a[1], resume: a[2], saved: a[3], applied: a[4],
+             stage, statusWhen: a[6], next: a[7], nextWhen: a[8], cover: !!a[9], match: a[10] };
+  }
+
+  timeline(a) {
+    const ev = [];
+    ev.push({ label: "Saved", when: a.saved, done: true });
+    if (a.applied !== "—") ev.push({ label: "Applied", when: a.applied, done: true });
+    const past = { screening: "Screening call", interviewing: "Interview scheduled", offer: "Offer received", rejected: "Closed out" };
+    if (past[a.stage]) ev.push({ label: past[a.stage], when: a.statusWhen, done: true });
+    if (a.next !== "—") ev.push({ label: a.next, when: a.nextWhen || "Upcoming", done: false });
+    return ev.map((e, k) => ({
+      label: e.label, when: e.when,
+      dotCls: e.done ? "tdot" : "tdot-off",
+      lineCls: k === ev.length - 1 ? "tline-off" : "tline",
+    }));
+  }
+
+  counts() {
+    const c = {};
+    STAGE_ORDER.forEach((s) => { c[s] = 0; });
+    APPS.forEach((_, i) => { c[this.app(i).stage] += 1; });
+    return c;
+  }
+
+  /* ── render inputs ────────────────────────────────────── */
+  renderVals() {
+    const st = this.state;
+    const view = st.view;
+    const isDash = view === "dash";
+    const isHome = isDash && st.nav === "home";
+    const counts = this.counts();
+
+    // sidebar
+    const nav = (k) => "nav-item" + (st.nav === k ? " on" : "");
+
+    // table rows
+    let idx = APPS.map((_, i) => i);
+    if (st.filter) idx = idx.filter((i) => this.app(i).stage === st.filter);
+    const limited = isHome && !st.filter;
+    const shown = limited ? idx.slice(0, 6) : idx;
+
+    const rows = shown.map((i) => {
+      const a = this.app(i);
+      return {
+        role: a.role, company: a.company, resume: a.resume, applied: a.applied,
+        initial: a.company.charAt(0), logoCls: "logo",
+        status: STAGE_META[a.stage].label, pillCls: "pill p-" + a.stage,
+        next: a.next === "—" ? "—" : a.next,
+        coverTip: a.cover ? "Open the cover letter" : "No cover letter for this one",
+        onOpen: () => this.setState({ drawer: i }),
+        onResume: () => this.flash("Opening " + a.resume + " — " + a.role),
+        onCover: () => this.flash(a.cover ? "Opening the cover letter" : "No cover letter saved for this one"),
+      };
+    });
+
+    // pipeline
+    const max = Math.max.apply(null, STAGE_ORDER.map((s) => counts[s]));
+    const stages = STAGE_ORDER.map((s, k) => ({
+      name: STAGE_META[s].name, count: counts[s],
+      pct: Math.round((counts[s] / max) * 100) + "%",
+      cls: "stagebox" + (st.filter === s ? " on" : ""),
+      barCls: st.filter === s ? "bar" : (s === "rejected" ? "bar-mut" : "bar"),
+      arrow: k < STAGE_ORDER.length - 1,
+      onPick: () => this.setState({ nav: "apps", view: "dash", filter: st.filter === s ? null : s }),
+    }));
+
+    const filters = [{ label: "All", count: APPS.length, key: null }].concat(
+      STAGE_ORDER.map((s) => ({ label: STAGE_META[s].name, count: counts[s], key: s }))
+    ).map((f) => ({
+      label: f.label, count: f.count,
+      cls: "fchip" + (st.filter === f.key ? " on" : ""),
+      onPick: () => this.setState({ filter: f.key }),
+    }));
+
+    // drawer
+    const d0 = st.drawer !== null ? this.app(st.drawer) : null;
+    const drawer = d0 ? {
+      role: d0.role, company: d0.company, initial: d0.company.charAt(0), logoCls: "logo",
+      applied: d0.applied === "—" ? "Not applied yet" : d0.applied,
+      match: d0.match, resume: d0.resume === "—" ? "Not tailored yet" : d0.resume,
+      coverLabel: d0.cover ? "Open cover letter" : "Not generated",
+      status: STAGE_META[d0.stage].label,
+      updated: "Updated " + d0.statusWhen,
+      next: d0.next === "—" ? "Nothing scheduled" : d0.next,
+      nextWhen: d0.nextWhen || "No date set",
+      jd: JDS[d0.company] || "The full posting wasn't saved for this one. Paste it in to keep it with the application.",
+      timeline: this.timeline(d0),
+    } : { role: "", company: "", initial: "", logoCls: "logo", applied: "", match: "", resume: "",
+          coverLabel: "", status: "Draft", updated: "", next: "", nextWhen: "", jd: "", timeline: [] };
+
+    // tailoring steps
+    const steps = STEP_DEFS.map((s, k) => ({
+      label: s[0], detail: s[1],
+      done: k < st.step, active: k === st.step, pending: k > st.step,
+      iconCls: k < st.step ? "sdot done" : (k === st.step ? "sdot active" : "sdot"),
+      textCls: k <= st.step ? "stext on" : "stext",
+    }));
+
+    // library
+    const library = [3, 2, 1].flatMap((v) => []).concat(
+      [["Recast v3", "Data Scientist · Google", "Aug 28 · 2 pages", "82%"],
+       ["Recast v3", "Research Scientist · Anthropic", "Aug 27 · 2 pages", "74%"],
+       ["Recast v2", "Applied Scientist · Stripe", "Aug 26 · 2 pages", "78%"],
+       ["Recast v2", "ML Engineer · Microsoft", "Aug 25 · 2 pages", "71%"],
+       ["Recast v3", "Data Scientist · Shopify", "Aug 24 · 2 pages", "77%"],
+       ["Recast v1", "Senior Data Scientist · Figma", "Aug 12 · 1 page", "69%"]]
+    ).map((v) => ({
+      name: v[0], role: v[1], meta: v[2], match: v[3], hlCls: "hl",
+      onOpen: () => this.setState({ nav: "tailor", view: "results", resume: true, tab: "resume" }),
+    }));
+
+    const jdLen = st.jd.length;
+
+    return {
+      accent: this.props.accent ?? "#1d4e79",
+
+      /* nav */
+      n0: nav("home"), n1: nav("tailor"), n2: nav("apps"), n3: nav("library"), n4: nav("profile"), n5: nav("settings"),
+      goHome: () => this.go("home", "dash"),
+      goTailor: () => this.go("tailor", "tailor"),
+      goApps: () => this.go("apps", "dash"),
+      goLibrary: () => this.go("library", "library"),
+      goSoon: () => this.go("profile", "soon"),
+
+      /* which screen */
+      isTailor: view === "tailor", isRunning: view === "tailoring", isResults: view === "results",
+      isDash, isHome, isAppsList: isDash && st.nav === "apps", isLibrary: view === "library", isSoon: view === "soon",
+
+      /* screen 2 */
+      noResume: !st.resume, hasResume: st.resume,
+      resumeChipCls: st.resume ? "chip c-move" : "chip c-edit",
+      resumeChipText: st.resume ? "ready" : "needed",
+      upload: () => { this.setState({ resume: true }); this.flash("Resume parsed — 21 bullets"); },
+      replace: () => this.setState({ resume: false }),
+      isPaste: st.jdMode === "paste", isUpload: st.jdMode === "upload",
+      segPaste: st.jdMode === "paste" ? "on" : "", segUpload: st.jdMode === "upload" ? "on" : "",
+      modePaste: () => this.setState({ jdMode: "paste" }), modeUpload: () => this.setState({ jdMode: "upload" }),
+      jd: st.jd, setJd: (e) => this.setState({ jd: e.target.value }),
+      jdCount: jdLen ? jdLen.toLocaleString("en-US") + " characters" : "Nothing pasted yet",
+      jdHint: jdLen ? "Boilerplate gets thrown away" : "Paste the whole posting",
+      company: st.company, title: st.title, url: st.url,
+      setCompany: (e) => this.setState({ company: e.target.value }),
+      setTitle: (e) => this.setState({ title: e.target.value }),
+      setUrl: (e) => this.setState({ url: e.target.value }),
+      coverBox: st.wantCover ? "cbox on" : "cbox",
+      toggleCover: () => this.setState({ wantCover: !st.wantCover }),
+      ctaOff: !st.resume || !st.jd.trim(),
+      ctaHint: !st.resume ? "Upload your resume to continue — it only has to happen once."
+             : !st.jd.trim() ? "Paste the job description to continue."
+             : st.wantCover ? "We'll tailor the resume and draft a cover letter from it."
+             : "We'll tailor the resume. You can add a cover letter afterwards.",
+      runTailor: () => { this.setState({ view: "tailoring", step: 0 }); this.runSteps(0); },
+
+      /* screen 3 */
+      steps,
+      runPct: Math.round((st.step / STEP_DEFS.length) * 100) + "%",
+      runSubtitle: (st.title || "Data Scientist") + " · " + (st.company || "Google"),
+
+      /* screen 4 */
+      wantCover: st.wantCover,
+      onResumeTab: st.tab === "resume" || !st.wantCover,
+      onCoverTab: st.tab === "cover" && st.wantCover,
+      tabResume: st.tab === "resume" ? "on" : "", tabCover: st.tab === "cover" ? "on" : "",
+      showResume: () => this.setState({ tab: "resume" }), showCover: () => this.setState({ tab: "cover" }),
+      fmtPdf: st.fmt === "pdf" ? "on" : "", fmtDocx: st.fmt === "docx" ? "on" : "",
+      setPdf: () => this.setState({ fmt: "pdf" }), setDocx: () => this.setState({ fmt: "docx" }),
+      savedLabel: st.saved ? "Saved" : "Saving…",
+      libLabel: st.libSaved ? "In your library" : "Save to Resume Library",
+      saveLibrary: () => { this.setState({ libSaved: true }); this.flash("Saved to your Resume Library as Recast v4"); },
+      downloadLabel: st.tab === "cover" && st.wantCover ? "Download Cover Letter" : "Download Resume",
+      download: () => this.flash((st.tab === "cover" && st.wantCover ? "Cover letter" : "Resume") + " downloaded as " + st.fmt.toUpperCase()),
+      changeCount: "9 changes",
+      summary: [this.bullet("sum")],
+      sections: [
+        { kicker: true, kickerText: "Experience", head: "Senior Data Scientist, Loop Health", meta: "2022 – Present",
+          bullets: [this.bullet("b1"), this.bullet("b2"), this.bullet("b3")] },
+        { kicker: false, kickerText: "", head: "Data Scientist, Northwind Retail", meta: "2019 – 2022",
+          bullets: [this.bullet("b4"), this.bullet("b5")] },
+        { kicker: true, kickerText: "Projects", head: "Churn early-warning", meta: "Python, XGBoost, Airflow",
+          bullets: [this.bullet("b6")] },
+      ],
+      skills: SKILLS.map((s) => ({ name: s[0], cls: s[1] === 1 ? "sk sk-on" : (s[1] === -1 ? "sk sk-off" : "sk") })),
+      aside: st.aside.map((k) => ({
+        text: ASIDE[k],
+        onRestore: () => { this.setState((s) => ({ aside: s.aside.filter((x) => x !== k) })); this.flash("Put back on the page"); },
+      })),
+      asideCount: st.aside.length,
+      breakdown: BREAKDOWN.map((b) => ({
+        label: b.label, count: b.items.length, items: b.items,
+        dotCls: b.dot, itemCls: b.key === "gaps" ? "itm itm-w" : "itm",
+        open: st.open === b.key, caretCls: st.open === b.key ? "caret on" : "caret",
+        hasNote: !!b.note, note: b.note || "",
+        onToggle: () => this.setState({ open: st.open === b.key ? null : b.key }),
+        onAnswer: () => this.flash("Two questions — your answers become bullets in your words"),
+      })),
+      cover: st.cover, setCover: (e) => { const v = e.target.value; this.setState({ cover: v, saved: false }); setTimeout(() => this.setState({ saved: true }), 700); },
+      regenLabel: st.regenerating ? "Rewriting…" : "Regenerate",
+      regen: () => { this.setState({ regenerating: true }); clearTimeout(this.regenTimer); this.regenTimer = setTimeout(() => this.setState({ regenerating: false }), 1400); },
+
+      /* screen 5 */
+      stages, filters, rows,
+      pipeNote: st.filter ? "Filtered to " + STAGE_META[st.filter].name : "Click a stage to filter",
+      tableTitle: isHome ? "Recent applications" : (st.filter ? STAGE_META[st.filter].name : "All applications"),
+      rowCount: limited ? "Showing 6 of " + APPS.length : rows.length + " of " + APPS.length,
+      filtered: !!st.filter, clearFilter: () => this.setState({ filter: null }),
+      noRows: rows.length === 0,
+      showMore: limited, viewAll: () => this.setState({ nav: "apps", view: "dash", filter: null }),
+      addApp: () => this.flash("Add an application by hand — company, role, and where you are with it"),
+
+      /* library */
+      library,
+
+      /* drawer */
+      drawerOpen: st.drawer !== null, d: drawer,
+      closeDrawer: () => this.setState({ drawer: null }),
+      statusOptions: STATUS_OPTIONS,
+      setStatus: (e) => { const v = e.target.value; this.setState((s) => ({ statusOverride: { ...s.statusOverride, [s.drawer]: v.toLowerCase() } })); this.flash("Moved to " + v); },
+      notes: st.drawer !== null ? (st.notes[st.drawer] || "") : "",
+      setNotes: (e) => { const v = e.target.value; this.setState((s) => ({ notes: { ...s.notes, [s.drawer]: v } })); },
+      noteSaved: "Saves as you type",
+      openResume: () => this.setState({ nav: "tailor", view: "results", tab: "resume", resume: true, drawer: null }),
+      openCover: () => this.setState({ nav: "tailor", view: "results", tab: "cover", resume: true, wantCover: true, drawer: null }),
+      noop: () => {},
+
+      /* toast */
+      hasToast: !!st.toast, toast: st.toast || "",
+    };
+  }
+}
+</script>
+</body>
+</html>
