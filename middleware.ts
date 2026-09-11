@@ -1,25 +1,72 @@
+import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { SUPABASE_ANON_KEY, SUPABASE_URL, supabaseConfigured } from "@/lib/supabase/config";
 
-// Gate the pages on a session cookie. The Python API checks the same secret
-// itself, so this is about not rendering the app shell to a stranger — it is not
-// the only line of defence.
+// Gate the pages on a Supabase session, and refresh it while we are here.
 //
-// With RECAST_TOKEN unset (local dev) everything is open, which matches the API.
-export function middleware(req: NextRequest) {
-  const token = process.env.RECAST_TOKEN;
-  if (!token) return NextResponse.next();
+// The refresh is not incidental. Access tokens are short-lived, and only a
+// server that can write cookies can rotate one — so running this on every page
+// request is what stops a tab that has been open for an hour from bouncing the
+// user to the login screen. It is also why `getUser()` is used rather than
+// `getSession()`: getUser revalidates against the auth server, getSession
+// trusts whatever the cookie says, and a cookie is user-supplied input.
+//
+// This is not the only line of defence. The Python API verifies the same JWT
+// itself, so a request that skips the browser entirely still gets checked.
+//
+// With Supabase unconfigured (local dev) everything is open, which matches the
+// API.
 
-  if (req.cookies.get("recast_session")?.value === token) return NextResponse.next();
+const PUBLIC = ["/login", "/auth"];
 
-  const url = req.nextUrl.clone();
-  url.pathname = "/login";
-  url.search = "";
-  return NextResponse.redirect(url);
+export async function middleware(req: NextRequest) {
+  if (!supabaseConfigured) return NextResponse.next();
+
+  // Reassigned by setAll below: cookie writes have to land on the response that
+  // is actually returned, and that response is rebuilt once the request carries
+  // the refreshed cookies.
+  let res = NextResponse.next({ request: req });
+
+  const supabase = createServerClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    cookies: {
+      getAll: () => req.cookies.getAll(),
+      setAll: (written) => {
+        written.forEach(({ name, value }) => req.cookies.set(name, value));
+        res = NextResponse.next({ request: req });
+        written.forEach(({ name, value, options }) => res.cookies.set(name, value, options));
+      },
+    },
+  });
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const { pathname } = req.nextUrl;
+  const isPublic = PUBLIC.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+
+  if (!user && !isPublic) {
+    const url = req.nextUrl.clone();
+    url.pathname = "/login";
+    url.search = "";
+    // Where they were headed, so the callback can put them back there.
+    if (pathname !== "/") url.searchParams.set("next", pathname);
+    return NextResponse.redirect(url);
+  }
+
+  if (user && pathname === "/login") {
+    const url = req.nextUrl.clone();
+    url.pathname = "/";
+    url.search = "";
+    return NextResponse.redirect(url);
+  }
+
+  return res;
 }
 
 export const config = {
-  // /api is excluded: the Python function does its own auth and returns 401,
-  // which the client turns into a redirect. Redirecting an XHR would hand the
-  // caller an HTML login page instead of an error.
-  matcher: ["/((?!api|login|_next/static|_next/image|favicon.ico).*)"],
+  // /api is excluded: the Python function verifies the JWT itself and returns
+  // 401, which the client turns into a redirect. Redirecting an XHR would hand
+  // the caller an HTML login page instead of an error.
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
 };

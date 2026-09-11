@@ -15,6 +15,7 @@ decides layout.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 
 from ..models.analysis import Analysis
@@ -28,6 +29,9 @@ from ..models.tailored import (
 )
 from . import rewrite
 from .analyze import analyze
+
+# Matches Bullet.tokens(), so a hit here means the same thing it does there.
+_TOKEN = re.compile(r"[a-z0-9+#.]{2,}")
 
 
 @dataclass
@@ -64,10 +68,15 @@ def tailor(
     def score_of(bullet_id: str) -> float:
         return analysis.bullet_scores.get(bullet_id, 0.0)
 
-    def hits_of(bullet_id: str) -> list[str]:
-        """Which of the job's keywords this bullet already contains."""
-        bullet = index.get(bullet_id)
-        return sorted(bullet.tokens() & jd.keyword_tokens()) if bullet else []
+    def hits_in(text: str) -> list[str]:
+        """Which of the job's keywords this wording contains.
+
+        Takes the text rather than the bullet id because it has to run on the
+        *final* wording. Reading the master bullet instead meant a keyword the
+        rewrite legitimately worked in was never credited — the page said it and
+        the resume's own record of itself did not.
+        """
+        return sorted(set(_TOKEN.findall(text.lower())) & jd.keyword_tokens())
 
     # --- decide what goes on the page (deterministic) ------------------------
     keep: list[str] = []
@@ -136,7 +145,7 @@ def tailor(
             original=src.text,
             score=round(score_of(bullet_id), 3),
             rationale=rationale,
-            keywords_hit=hits_of(bullet_id),
+            keywords_hit=hits_in(text),
             flags=flags,
         )
 

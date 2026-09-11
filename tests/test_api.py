@@ -7,6 +7,7 @@ deployable: it never touches the filesystem for output, and the token gate holds
 
 from __future__ import annotations
 
+import time
 from pathlib import Path
 
 import pytest
@@ -73,16 +74,86 @@ def test_profile_round_trip(client):
 
 
 # --- auth --------------------------------------------------------------------
+#
+# Signed with a symmetric key throughout. The deployed project uses asymmetric
+# keys and a JWKS endpoint, but the only difference is where `verify` gets the
+# key from — the claim checks these exercise are the same on both paths, and
+# testing the JWKS path would mean either a network call or mocking out the one
+# piece of PyJWT doing the work.
+
+SECRET = "test-signing-secret"
+ISSUER = "https://project.supabase.co/auth/v1"
 
 
-def test_token_gate_rejects_and_admits(client, monkeypatch):
-    monkeypatch.setattr("recast.api.main.TOKEN", "s3cret")
-    assert client.get("/profile").status_code == 401
-    assert client.get("/profile", headers={"X-Recast-Token": "wrong"}).status_code == 401
-    assert client.get("/profile", headers={"X-Recast-Token": "s3cret"}).status_code == 200
+@pytest.fixture
+def signed_in(monkeypatch):
+    """Turn the gate on, and hand back a factory for tokens it will accept."""
+    monkeypatch.setattr("recast.api.auth.SUPABASE_URL", "https://project.supabase.co")
+    monkeypatch.setattr("recast.api.auth.JWT_SECRET", SECRET)
+
+    def token(user="user-uuid", secret=SECRET, **overrides):
+        import jwt
+
+        claims = {
+            "sub": user,
+            "aud": "authenticated",
+            "role": "authenticated",
+            "iss": ISSUER,
+            "exp": int(time.time()) + 3600,
+            **overrides,
+        }
+        return {"Authorization": f"Bearer {jwt.encode(claims, secret, algorithm='HS256')}"}
+
+    return token
 
 
-def test_no_token_configured_means_open(client):
+def test_a_valid_token_admits(client, signed_in):
+    assert client.get("/profile", headers=signed_in()).status_code == 200
+
+
+@pytest.mark.parametrize(
+    "headers",
+    [
+        pytest.param({}, id="no header"),
+        pytest.param({"Authorization": "Bearer not-a-jwt"}, id="malformed"),
+        pytest.param({"Authorization": "Basic abc"}, id="wrong scheme"),
+    ],
+)
+def test_the_gate_rejects(client, signed_in, headers):
+    assert client.get("/profile", headers=headers).status_code == 401
+
+
+def test_a_token_signed_by_someone_else_is_rejected(client, signed_in):
+    assert client.get("/profile", headers=signed_in(secret="other-secret")).status_code == 401
+
+
+def test_an_expired_token_is_rejected(client, signed_in):
+    stale = signed_in(exp=int(time.time()) - 60)
+    assert client.get("/profile", headers=stale).status_code == 401
+
+
+def test_a_token_from_another_project_is_rejected(client, signed_in):
+    assert client.get("/profile", headers=signed_in(iss="https://evil.supabase.co/auth/v1")).status_code == 401
+
+
+def test_the_anon_key_is_not_a_user(client, signed_in):
+    """The anon key is a valid JWT signed by the project — and grants nothing here."""
+    anon = signed_in(user="", role="anon")
+    assert client.get("/profile", headers=anon).status_code == 401
+
+
+def test_requests_are_scoped_to_the_caller(client, signed_in, monkeypatch):
+    """The id in the token is what reaches the store, not a constant."""
+    seen = []
+    monkeypatch.setattr(
+        "recast.api.main.store.list_applications",
+        lambda root=None, user=None: seen.append(user) or [],
+    )
+    client.get("/applications", headers=signed_in(user="abc-123"))
+    assert seen == ["abc-123"]
+
+
+def test_no_supabase_configured_means_open(client):
     assert client.get("/profile").status_code == 200
 
 

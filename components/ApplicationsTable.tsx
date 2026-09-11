@@ -125,15 +125,19 @@ export default function ApplicationsTable({
                 <span className="tipbody w-[140px]">Open the tailored resume</span>
               </span>
               <span className="tip">
-                <a
-                  href={api.pdfUrl(a.job_id)}
-                  target="_blank"
-                  rel="noreferrer"
+                {/* A button, not a link: the PDF endpoint needs an auth header,
+                    which only a fetch can carry. */}
+                <button
+                  type="button"
                   className="btn btn-quiet btn-xs w-[26px] p-0"
-                  onClick={(e) => e.stopPropagation()}
+                  aria-label="Download the PDF"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    void api.downloadResume(a.job_id);
+                  }}
                 >
                   <IconDownload size={14} strokeWidth={1.7} />
-                </a>
+                </button>
                 <span className="tipbody w-[140px]">Download the PDF</span>
               </span>
             </span>

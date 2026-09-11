@@ -150,8 +150,10 @@ Then <http://localhost:3000>. Both are up in about five seconds.
 - `/a/<job_id>` — the editor: every bullet with its relevance score, guard flags,
   "reworded — show original", revert, and a live preview
 
-No login locally: `RECAST_TOKEN` is unset, so the password gate is off. Set it and
-both halves start enforcing it.
+No login locally: with `SUPABASE_URL` unset the middleware stops gating pages and
+the API attributes everything to one local user. Set it, plus the two
+`NEXT_PUBLIC_SUPABASE_*` values, and both halves start enforcing Google sign-in —
+see [Sign-in](#sign-in) below.
 
 To point the API at a different profile:
 
@@ -168,11 +170,50 @@ free.
 
 Set `DATABASE_URL` and it uses Postgres instead; `recast initdb` creates the tables.
 
+The CLI writes as `me`, which is fine against files and rejected by Postgres —
+there `user_id` is a uuid with a foreign key to `auth.users`. Set `RECAST_USER` to
+your Supabase user id (`select id, email from auth.users;`) to have the CLI write
+into the same rows the web app reads.
+
+### Sign-in
+
+Google, through Supabase Auth. Four environment variables and one migration.
+
+| Variable | Where | What it does |
+| --- | --- | --- |
+| `NEXT_PUBLIC_SUPABASE_URL` | browser + server | project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | browser + server | anon/publishable key |
+| `SUPABASE_URL` | Python function | same URL; the JWKS endpoint hangs off it |
+| `SUPABASE_JWT_SECRET` | Python function | **legacy projects only** — omit it if the project uses asymmetric signing keys |
+
+In the Supabase dashboard: enable Google under Authentication → Providers with a
+client id and secret from Google Cloud, add
+`https://<ref>.supabase.co/auth/v1/callback` as the authorised redirect URI on the
+Google side, and add your deployed origin to the redirect allow-list on the
+Supabase side.
+
+Then run `migrations/0001_google_auth.sql` in the SQL editor. It moves `user_id`
+from `text` to a uuid keyed on `auth.users`, and turns on row-level security —
+**read the top of that file first**, it asks you to choose whether the existing
+single-user rows are reassigned to your account or deleted.
+
+How it fits together:
+
+- The browser holds the session in cookies, via `@supabase/ssr`.
+- `middleware.ts` refreshes it on every page request and redirects strangers to
+  `/login`. It is not the security boundary.
+- `lib/api.ts` sends the access token as a bearer header on every API call.
+- `src/recast/api/auth.py` verifies that token against the project's published
+  JWKS — locally, no round trip to Supabase — and hands the `sub` claim to the
+  store as the user id. That is the boundary.
+- Row-level security is a second wall, in front of PostgREST rather than in front
+  of us: the Python function connects as the table owner and bypasses it.
+
 ### If something breaks
 
 ```bash
 .venv/bin/recast models     # your provider's live model list — catalogs drift
-.venv/bin/python -m pytest tests -q   # 93 tests, no API key or network needed
+.venv/bin/python -m pytest tests -q   # 104 tests, no API key or network needed
 ```
 
 Groq's free tier is 8,000 tokens/minute, which a long resume can exceed. The client

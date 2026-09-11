@@ -1,21 +1,45 @@
 // One place that knows the API lives at /api/py.
 //
-// No token handling here on purpose: the session cookie is httpOnly and
-// same-origin, so the browser attaches it and page JavaScript never sees the
-// secret. `credentials: "include"` is what makes that happen on every call.
+// Every call carries the Supabase access token as a bearer header, and the
+// Python function verifies it and reads the user id out of it. The token is
+// fetched per request rather than held in a variable: supabase-js rotates it in
+// the background, and a captured one goes stale while the tab is open.
+//
+// `getSession()` is right here even though the middleware uses `getUser()`. This
+// is the token's owner reading its own token to send it onward, so a round trip
+// to revalidate would buy nothing — the server it is being sent to verifies it
+// anyway, which is the check that counts.
+
+import { getSupabase } from "./supabase/client";
 
 const BASE = "/api/py";
+
+async function authHeaders(): Promise<Record<string, string>> {
+  const supabase = getSupabase();
+  if (!supabase) return {}; // Unconfigured: the API is open, as in local dev.
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  return session ? { Authorization: `Bearer ${session.access_token}` } : {};
+}
+
+/** 401 means the session is gone for good — supabase-js already tried to refresh. */
+function bounce(): never {
+  window.location.href = `/login?next=${encodeURIComponent(window.location.pathname)}`;
+  throw new Error("Session expired.");
+}
 
 async function req<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
     ...init,
     credentials: "include",
-    headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) },
+    headers: {
+      "Content-Type": "application/json",
+      ...(await authHeaders()),
+      ...(init?.headers ?? {}),
+    },
   });
-  if (res.status === 401) {
-    window.location.href = "/login";
-    throw new Error("Session expired.");
-  }
+  if (res.status === 401) bounce();
   if (!res.ok) {
     const detail = await res.text().catch(() => "");
     throw new Error(detail.slice(0, 300) || `${res.status} ${res.statusText}`);
@@ -23,6 +47,31 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
   return res.headers.get("content-type")?.includes("json")
     ? ((await res.json()) as T)
     : ((await res.text()) as unknown as T);
+}
+
+/**
+ * Fetch a rendered document and hand the browser a blob URL for it.
+ *
+ * A plain <a href> or window.open cannot carry an Authorization header, so the
+ * PDF and DOCX endpoints have to be fetched rather than navigated to. The URL is
+ * revoked on the next tick: long enough for the tab or the download to have
+ * taken it, short enough not to pin the file in memory for the session.
+ */
+async function fetchDoc(path: string): Promise<string> {
+  const res = await fetch(`${BASE}${path}`, {
+    credentials: "include",
+    headers: await authHeaders(),
+  });
+  if (res.status === 401) bounce();
+  if (!res.ok) {
+    const detail = await res.text().catch(() => "");
+    throw new Error(detail.slice(0, 300) || `${res.status} ${res.statusText}`);
+  }
+  return URL.createObjectURL(await res.blob());
+}
+
+function release(url: string) {
+  setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
 
 import type { Analysis, Application, Ats, CoverLetter, Job, ParseResult, Profile, Resume } from "./types";
@@ -39,11 +88,13 @@ export const api = {
   uploadResume: async (file: File): Promise<ParseResult> => {
     const body = new FormData();
     body.append("file", file);
-    const res = await fetch("/api/py/resumes", { method: "POST", body, credentials: "include" });
-    if (res.status === 401) {
-      window.location.href = "/login";
-      throw new Error("Session expired.");
-    }
+    const res = await fetch("/api/py/resumes", {
+      method: "POST",
+      body,
+      credentials: "include",
+      headers: await authHeaders(),
+    });
+    if (res.status === 401) bounce();
     if (!res.ok) {
       const detail = await res.json().catch(() => null);
       throw new Error(detail?.detail ?? `Upload failed (${res.status})`);
@@ -93,6 +144,20 @@ export const api = {
 
   getCoverLetter: (id: string) => req<CoverLetter>(`/applications/${id}/cover-letter`),
 
-  pdfUrl: (id: string) => `${BASE}/applications/${id}/resume.pdf`,
-  docxUrl: (id: string) => `${BASE}/applications/${id}/resume.docx`,
+  /** Open the rendered resume in a new tab. */
+  openResume: async (id: string, fmt: "pdf" | "docx" = "pdf") => {
+    const url = await fetchDoc(`/applications/${id}/resume.${fmt}`);
+    window.open(url, "_blank", "noopener");
+    release(url);
+  },
+
+  /** Save the rendered resume to disk, named after the application. */
+  downloadResume: async (id: string, fmt: "pdf" | "docx" = "pdf") => {
+    const url = await fetchDoc(`/applications/${id}/resume.${fmt}`);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${id}.${fmt}`;
+    a.click();
+    release(url);
+  },
 };

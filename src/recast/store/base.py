@@ -12,6 +12,7 @@ and it means a rendered PDF can never go stale against the resume it came from.
 
 from __future__ import annotations
 
+import os
 from datetime import date
 from typing import Literal, Protocol
 
@@ -24,8 +25,15 @@ from ..models.tailored import CoverLetter, TailoredResume
 
 Status = Literal["draft", "applied", "screening", "interviewing", "offer", "rejected", "withdrawn"]
 
-# Single-user installs use this until real auth exists.
-DEFAULT_USER = "me"
+# Who a request belongs to when nobody signed in. That is the CLI, `recast
+# serve`, and the test suite — all of them file-backed, where the user id is
+# ignored entirely and this is just a label.
+#
+# RECAST_USER overrides it, and the case that needs it is the CLI pointed at the
+# deployed Postgres: user_id there is a uuid with a foreign key to auth.users, so
+# "me" is rejected on sight. Set it to your own Supabase user id and the CLI
+# writes into the same rows the web app reads.
+DEFAULT_USER = os.getenv("RECAST_USER", "me")
 
 
 class Application(BaseModel):

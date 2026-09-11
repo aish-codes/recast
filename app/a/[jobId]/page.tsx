@@ -28,6 +28,7 @@ import {
 import { useProfile } from "@/components/useProfile";
 import { api } from "@/lib/api";
 import {
+  GAP_LABEL,
   STATUSES,
   STATUS_LABEL,
   type Analysis,
@@ -300,18 +301,24 @@ function Ring({ pct }: { pct: number }) {
   );
 }
 
+/** One entry in a breakdown row. `tag` is only rendered by the "list" shape. */
+type BreakdownItem = { text: string; tag?: string };
+
 function BreakdownRow({
   label,
   count,
   items,
   tone,
   note,
+  shape = "chip",
 }: {
   label: string;
   count: number;
-  items: string[];
+  items: BreakdownItem[];
   tone: "a" | "w";
   note?: string;
+  /** "chip" for keywords, "list" for anything sentence-length. */
+  shape?: "chip" | "list";
 }) {
   const [open, setOpen] = useState(false);
   return (
@@ -330,13 +337,29 @@ function BreakdownRow({
       {open && (
         <div className="fade px-2.5 pt-0.5 pb-3.5 pl-[27px]">
           {items.length ? (
-            <div className="flex flex-wrap gap-[5px]">
-              {items.map((i) => (
-                <span key={i} className={tone === "w" ? "itm itm-w" : "itm"}>
-                  {i}
-                </span>
-              ))}
-            </div>
+            shape === "list" ? (
+              <div className="reqlist">
+                {/* Index in the key: two requirements can legitimately read the
+                    same, and the list is render-only — never sorted or filtered
+                    in place — so position is a stable identity here. */}
+                {items.map((it, n) => (
+                  <div key={`${n}-${it.text}`} className={tone === "w" ? "req req-w" : "req"}>
+                    <span className="reqtext">
+                      {it.text}
+                      {it.tag && <span className="reqtag">{it.tag}</span>}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-wrap gap-[5px]">
+                {items.map((it, n) => (
+                  <span key={`${n}-${it.text}`} className={tone === "w" ? "itm itm-w" : "itm"}>
+                    {it.text}
+                  </span>
+                ))}
+              </div>
+            )
           ) : (
             <p className="m-0 text-[11px] text-muted">Nothing here.</p>
           )}
@@ -435,7 +458,11 @@ export default function Editor({ params }: { params: Promise<{ jobId: string }> 
 
   async function download() {
     if (dirty && !(await save())) return;
-    window.open(fmt === "pdf" ? api.pdfUrl(jobId) : api.docxUrl(jobId), "_blank");
+    try {
+      await api.downloadResume(jobId, fmt === "pdf" ? "pdf" : "docx");
+    } catch (e) {
+      setError((e as Error).message);
+    }
   }
 
   async function generateLetter() {
@@ -514,6 +541,15 @@ export default function Editor({ params }: { params: Promise<{ jobId: string }> 
   const coverage = ats?.keyword_coverage ?? app?.keyword_coverage ?? null;
   const match = analysis ? analysis.overall * 100 : coverage != null ? coverage * 100 : 0;
   const musts = resume.gaps.filter((g) => g.kind === "must");
+
+  // "Matched" means what RequirementMatch.satisfied means on the Python side —
+  // strong or partial. This used to be `verdict !== "absent"`, which quietly
+  // counted "weak" as a match and so reported a higher number than the same
+  // analysis would anywhere else.
+  const matched = (analysis?.matches ?? []).filter(
+    (m) => m.verdict === "strong" || m.verdict === "partial",
+  );
+  const partial = matched.filter((m) => m.verdict === "partial").length;
 
   return (
     <AppShell bareMobileHeader>
@@ -871,34 +907,49 @@ export default function Editor({ params }: { params: Promise<{ jobId: string }> 
               <BreakdownRow
                 label="Keywords on the page"
                 count={ats?.keyword_hits.length ?? analysis?.keywords_hit.length ?? 0}
-                items={ats?.keyword_hits ?? analysis?.keywords_hit ?? []}
+                items={(ats?.keyword_hits ?? analysis?.keywords_hit ?? []).map((t) => ({
+                  text: t,
+                }))}
                 tone="a"
               />
               <BreakdownRow
                 label="Keywords missing"
                 count={ats?.keyword_misses.length ?? analysis?.keywords_missed.length ?? 0}
-                items={ats?.keyword_misses ?? analysis?.keywords_missed ?? []}
+                items={(ats?.keyword_misses ?? analysis?.keywords_missed ?? []).map((t) => ({
+                  text: t,
+                }))}
                 tone="w"
                 note="Missing is not always wrong — a keyword you cannot evidence should stay off."
               />
               {analysis && (
                 <BreakdownRow
                   label="Requirements matched"
-                  count={analysis.matches.filter((m) => m.verdict !== "absent").length}
-                  items={analysis.matches
-                    .filter((m) => m.verdict !== "absent")
-                    .map((m) => m.requirement)}
+                  count={matched.length}
+                  items={matched.map((m) => ({
+                    text: m.requirement,
+                    tag: m.verdict === "strong" ? "fully evidenced" : "partly evidenced",
+                  }))}
                   tone="a"
+                  shape="list"
+                  note={
+                    partial
+                      ? `${partial} of these ${partial === 1 ? "is" : "are"} only partly evidenced, so ${partial === 1 ? "it appears" : "they also appear"} under Gaps below. A partial match is both.`
+                      : undefined
+                  }
                 />
               )}
               <BreakdownRow
                 label="Gaps"
                 count={musts.length}
-                items={musts.map((g) => g.requirement)}
+                items={musts.map((g) => ({
+                  text: g.requirement,
+                  tag: GAP_LABEL[g.category],
+                }))}
                 tone="w"
+                shape="list"
                 note={
                   musts.length
-                    ? "The job asks for these and your profile can't evidence them yet. `recast fill` walks through them and turns your answers into bullets."
+                    ? "Anything the job asks for that this resume doesn't fully evidence — including requirements counted as matched above. `recast fill` walks through them and turns your answers into bullets."
                     : undefined
                 }
               />

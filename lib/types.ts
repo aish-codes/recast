@@ -30,11 +30,41 @@ export type Project = {
   bullets: Bullet[];
 };
 
+/**
+ * What the job asks for that the resume doesn't fully answer.
+ *
+ * Declared once, because there is only one of these on the Python side —
+ * `models/tailored.py` imports Gap straight out of `models/analysis.py`, so a
+ * resume's gaps and an analysis's gaps are the same objects. This type used to
+ * list four of the seven fields, which is why `category` — the one that says
+ * what to actually do about a gap — never reached the UI.
+ */
 export type Gap = {
+  requirement_id: string;
   requirement: string;
   kind: "must" | "nice";
+  category: GapCategory;
   confidence: "high" | "low";
+  evidence: Evidence[];
   suggestion: string;
+};
+
+/**
+ * Only "missing" needs the user to supply something new. The other three are
+ * generation problems — the evidence is already in the profile and the resume
+ * is failing to surface it, which is a far more actionable thing to be told.
+ */
+export type GapCategory =
+  | "missing"
+  | "underrepresented"
+  | "semantically_equivalent"
+  | "transferable";
+
+export const GAP_LABEL: Record<GapCategory, string> = {
+  missing: "nothing to draw on",
+  underrepresented: "listed, not demonstrated",
+  semantically_equivalent: "you have it, worded differently",
+  transferable: "adjacent experience",
 };
 
 export type Resume = {
@@ -181,14 +211,8 @@ export type SubScore = {
   inputs: string[];
 };
 
-export type AnalysisGap = {
-  requirement_id: string;
-  requirement: string;
-  kind: "must" | "nice";
-  category: "missing" | "underrepresented" | "semantically_equivalent" | "transferable";
-  confidence: "high" | "low";
-  suggestion: string;
-};
+/** The same object as `Gap`; kept as a name because the analysis reads better with it. */
+export type AnalysisGap = Gap;
 
 export type Analysis = {
   id: string;

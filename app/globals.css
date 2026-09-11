@@ -159,6 +159,35 @@ a:hover {
   background: #f2f5f8;
   transform: translateY(-1px);
 }
+/* Google sign-in. A white button with the unmodified mark is the shape Google's
+   branding terms ask for, and it happens to be the right call here anyway: the
+   primary CTA colour is our accent, and spending it on someone else's brand
+   would make Google the loudest thing on the page. This reads as a surface the
+   logo sits on, with the weight coming from the shadow rather than the fill. */
+.btn-google {
+  background: var(--surface);
+  color: var(--ink);
+  border-color: var(--line);
+  box-shadow:
+    0 1px 2px rgba(19, 28, 37, 0.07),
+    0 10px 24px -18px rgba(19, 28, 37, 0.55);
+}
+.btn-google:hover:not(:disabled) {
+  background: var(--ground);
+  border-color: #cbd5df;
+  transform: translateY(-1px);
+}
+.btn-google:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 14%, transparent);
+}
+/* On the deep closer band the same button needs no border to separate it. */
+.btn-google.on-deep {
+  border-color: rgba(255, 255, 255, 0.22);
+  box-shadow: 0 10px 30px -16px rgba(0, 0, 0, 0.6);
+}
+
 .btn:disabled {
   opacity: 0.38;
   cursor: not-allowed;
@@ -605,6 +634,64 @@ a:hover {
   background: var(--warnt);
   color: var(--warn);
   font-weight: 600;
+}
+
+/* ── requirement rows ───────────────────────────────────────────────────────
+   The breakdown list holds two different kinds of content. Keywords are one or
+   two words and belong in .itm chips. Requirements are whole sentences — the
+   longest in a real analysis runs to 182 characters — and a chip cannot hold
+   one: .itm is locked to height 22px, so the text wraps to three lines inside a
+   box that stays one line tall and spills out of its own background.
+
+   So they get a different shape rather than a bigger chip. Stacked full-width
+   rows, free to wrap, with the tag carrying the verdict or gap category that
+   the chip form had nowhere to put. */
+
+.reqlist {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.req {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 7px 9px 8px;
+  border-radius: 3px;
+  background: #eff2f5;
+  color: #41505e;
+}
+.req::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  margin-top: 6px;
+  border-radius: 99px;
+  background: currentColor;
+  opacity: 0.4;
+  flex: 0 0 auto;
+}
+.req-w {
+  background: var(--warnt);
+  color: var(--warn);
+}
+.reqtext {
+  min-width: 0;
+  flex: 1;
+  font-size: 11.5px;
+  line-height: 1.5;
+  font-weight: 500;
+}
+/* Sits under the text rather than beside it: at this width a right-aligned tag
+   would squeeze the sentence into a column two words wide. */
+.reqtag {
+  display: block;
+  margin-top: 3px;
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0.62;
 }
 .logo {
   background: #eff2f5;

@@ -35,15 +35,22 @@ def _jsonb(model):
     return Jsonb(model.model_dump(mode="json"))
 
 
+# user_id is the Supabase user id — the `sub` claim out of the caller's JWT.
+#
+# Kept portable on purpose: no foreign key to auth.users and no row-level
+# security here, because both are Supabase-specific and this statement also has
+# to run against a plain Postgres. The deployed database gets them from
+# migrations/0001_google_auth.sql, which is the authority on that shape; this is
+# the floor, not the finished article.
 SCHEMA = """
 create table if not exists profiles (
-    user_id    text primary key,
+    user_id    uuid primary key,
     data       jsonb not null,
     updated    timestamptz not null default now()
 );
 
 create table if not exists applications (
-    user_id      text not null,
+    user_id      uuid not null,
     job_id       text not null,
     company      text,
     role         text,
@@ -66,7 +73,7 @@ create index if not exists applications_user_updated
 -- row rather than overwriting, so a generated resume can always be traced to the
 -- analysis it came from.
 create table if not exists analyses (
-    user_id            text not null,
+    user_id            uuid not null,
     id                 text not null,
     job_id             text not null,
     resume_fingerprint text not null,

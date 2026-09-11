@@ -10,3 +10,5 @@ python-docx>=1.1
 fastapi>=0.115
 python-multipart>=0.0.20
 psycopg[binary]>=3.2
+pyjwt[crypto]>=2.10          # verify Supabase access tokens locally
+certifi>=2024.8              # CA bundle for the JWKS fetch

@@ -184,6 +184,58 @@ def test_strict_guard_reverts_fabricated_rewrites(profile, jd, monkeypatch):
         assert b.flags, "revert happened silently"
 
 
+def test_only_claimed_keywords_are_offered_to_the_model(profile, jd):
+    """The prompt may only name job terms the candidate has actually evidenced.
+
+    This is the whole safety story for widening the rule from "in this bullet" to
+    "anywhere in the profile": the model is handed a list rather than trusted to
+    infer the boundary, so the list must never contain a term the profile cannot
+    support.
+    """
+    bullets = list(profile.all_bullets())
+    missing, present = rewrite._claimable_keywords(jd, profile, bullets)
+
+    vocab = guard.profile_vocabulary(profile)
+    for keyword in missing + present:
+        for word in keyword.lower().split():
+            assert word in vocab, f"offered {keyword!r}, which the profile never claims"
+
+    # The split is the useful part: "present" is already said, "missing" is the work.
+    said = set()
+    for b in bullets:
+        said |= b.tokens()
+    for keyword in present:
+        assert all(w in said for w in keyword.lower().split())
+    for keyword in missing:
+        assert not all(w in said for w in keyword.lower().split())
+
+
+def test_a_rewrite_may_not_drop_a_job_keyword(profile, jd, monkeypatch):
+    """Losing a keyword the original had makes the resume worse at its one job."""
+    keyword = sorted(jd.keyword_tokens())[0]
+    original = f"Owned the {keyword} migration end to end, cutting incidents by half."
+    stripped = "Owned the migration end to end, cutting incidents by half."
+
+    lost, gained = rewrite._keyword_delta(original, stripped, jd.keyword_tokens())
+    assert lost == [keyword] and not gained
+
+    def dropping(system, user, schema, **kw):
+        ids = [line.split(":", 1)[0] for line in user.splitlines() if line.startswith("b_")]
+        return schema.model_validate(
+            {"rewrites": [{"id": i, "text": stripped, "rationale": "x"} for i in ids]}
+        )
+
+    monkeypatch.setattr(rewrite, "structured", dropping)
+    bullet = next(b for b in profile.all_bullets())
+    bullet.text = original
+
+    out = rewrite.rewrite_bullets([bullet], jd, profile, strict=True)
+    text, rationale, flags = out[bullet.id]
+    assert text == original, "the rewrite that dropped a keyword was allowed through"
+    assert any("dropped_keyword" in f for f in flags)
+    assert keyword in rationale
+
+
 def test_bullet_budget_is_enforced_before_rewriting(profile, jd, monkeypatch):
     """The cap must apply to what we pay to rewrite, not just what gets rendered."""
     seen: list[int] = []

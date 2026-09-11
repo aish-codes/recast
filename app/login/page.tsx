@@ -2,21 +2,20 @@
 
 /**
  * The landing page — Main.dc.html on desktop, MobileLanding.dc.html below the
- * 900px break, with one substitution: where the mockup signs you in with
- * Google, this build has a shared password, so the password field takes the
- * primary CTA's place. Everything else — the pipeline diagram, the three steps,
- * the trust row, the deep-ground closer — is the design as drawn.
+ * 900px break. The mockup signs you in with Google and so does this: the
+ * primary CTA is the Google button, in the hero and again in the closer.
  *
  * This doubles as the sign-in screen because middleware sends every
  * unauthenticated request here.
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
+import { getSupabase } from "@/lib/supabase/client";
 import {
   IconArrowRight,
   IconBrackets,
-  IconChevronDown,
   IconFile,
+  IconGoogle,
   IconLock,
   IconMail,
   IconPencil,
@@ -52,11 +51,9 @@ const STAGES = [
 ];
 
 export default function Landing() {
-  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [stage, setStage] = useState(-1);
-  const field = useRef<HTMLInputElement>(null);
 
   // Walk the pipeline diagram slowly so it is never dead on arrival.
   useEffect(() => {
@@ -64,23 +61,46 @@ export default function Landing() {
     return () => clearInterval(id);
   }, []);
 
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
+  // The callback route reports failures by bouncing back here with ?error=.
+  // Read from location rather than useSearchParams so the page still prerenders
+  // without a Suspense boundary wrapped around the whole landing page.
+  useEffect(() => {
+    const found = new URLSearchParams(window.location.search).get("error");
+    if (found) setError(found);
+  }, []);
+
+  async function signIn() {
+    const supabase = getSupabase();
+    if (!supabase) {
+      setError("Sign-in isn't configured on this deployment.");
+      return;
+    }
+
     setBusy(true);
     setError("");
-    const res = await fetch("/api/session", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password }),
-    });
-    setBusy(false);
-    if (res.ok) window.location.href = "/";
-    else setError("That password didn't match.");
-  }
 
-  function focusField() {
-    window.scrollTo({ top: 0, behavior: "smooth" });
-    field.current?.focus();
+    // Carry the page they were originally after through Google and back.
+    const next = new URLSearchParams(window.location.search).get("next") ?? "/";
+    const callback = new URL("/auth/callback", window.location.origin);
+    callback.searchParams.set("next", next);
+
+    const { error: failed } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: callback.toString(),
+        // Land on the account chooser rather than silently reusing whichever
+        // Google account the browser happens to be signed into — people apply
+        // for jobs from a personal account and browse from a work one.
+        queryParams: { prompt: "select_account" },
+      },
+    });
+
+    // On success the browser is already navigating away, so this only runs when
+    // the redirect never happened.
+    if (failed) {
+      setBusy(false);
+      setError(failed.message);
+    }
   }
 
   return (
@@ -103,8 +123,9 @@ export default function Landing() {
               Privacy
             </a>
           </nav>
-          <button className="btn btn-primary" onClick={focusField}>
-            Get started
+          <button className="btn btn-google" onClick={signIn} disabled={busy}>
+            <IconGoogle size={16} />
+            Sign in
           </button>
         </div>
       </header>
@@ -133,33 +154,26 @@ export default function Landing() {
             match the role — while keeping your experience authentic.
           </p>
 
-          {/* the sign-in card, where the mockup puts its Google button */}
-          <form onSubmit={submit} className="mt-8 flex w-full max-w-[380px] flex-col gap-2.5">
-            <label className="lbl sr-only" htmlFor="password">
-              Password
-            </label>
-            <div className="flex flex-col gap-2.5 sm:flex-row">
-              <input
-                id="password"
-                ref={field}
-                type="password"
-                autoFocus
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Your password"
-                className="inp h-12 flex-1 text-[15px]"
-              />
-              <button className="btn btn-primary btn-md" disabled={busy || !password}>
-                {busy ? "Checking…" : "Enter"}
-                <IconArrowRight size={17} />
-              </button>
-            </div>
+          {/* the sign-in card */}
+          <div className="mt-8 flex w-full max-w-[380px] flex-col gap-2.5">
+            <button
+              className="btn btn-google btn-md w-full"
+              onClick={signIn}
+              disabled={busy}
+              aria-describedby={error ? "signin-error" : undefined}
+            >
+              <IconGoogle size={19} />
+              {busy ? "Taking you to Google…" : "Continue with Google"}
+            </button>
             {error && (
-              <p className="m-0 text-[13px]" style={{ color: "var(--bad)" }}>
+              <p id="signin-error" className="m-0 text-[13px]" style={{ color: "var(--bad)" }}>
                 {error}
               </p>
             )}
-          </form>
+            <p className="m-0 text-[12.5px] text-muted">
+              We ask Google for your name and email address. Nothing else.
+            </p>
+          </div>
 
           <p className="mt-4 text-[13px] text-muted">
             PDF or DOCX · Every bullet traces back to one you wrote
@@ -405,9 +419,13 @@ export default function Landing() {
           <p className="mt-[18px] text-[17px]" style={{ color: "rgba(255,255,255,.7)" }}>
             One resume. Tailored for every opportunity.
           </p>
-          <button className="btn btn-light btn-md mt-8" onClick={focusField}>
-            Sign in to Recast
-            <IconChevronDown size={17} className="rotate-180" />
+          <button
+            className="btn btn-google btn-md on-deep mt-8"
+            onClick={signIn}
+            disabled={busy}
+          >
+            <IconGoogle size={19} />
+            {busy ? "Taking you to Google…" : "Continue with Google"}
           </button>
           <p className="mt-[18px] text-[13px]" style={{ color: "rgba(255,255,255,.55)" }}>
             PDF or DOCX in. PDF or DOCX out.
