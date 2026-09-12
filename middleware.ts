@@ -82,5 +82,9 @@ export const config = {
   // /api is excluded: the Python function verifies the JWT itself and returns
   // 401, which the client turns into a redirect. Redirecting an XHR would hand
   // the caller an HTML login page instead of an error.
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
+  //
+  // /_vercel is the analytics script and the beacon it posts to. Neither is a
+  // page, and a signed-out visitor on the landing page is exactly who the
+  // script is for — bouncing it to /login would count nobody.
+  matcher: ["/((?!api|_vercel|_next/static|_next/image|favicon.ico).*)"],
 };

@@ -39,6 +39,11 @@ export default function Privacy() {
           <strong className="font-semibold text-ink">The state of your applications.</strong> The
           status you set on each application, and any notes you add to it.
         </p>
+        <p>
+          <strong className="font-semibold text-ink">Which pages get visited.</strong> Page views
+          and load times, collected without cookies and not linked to your account. See Vercel
+          under section 03.
+        </p>
       </Section>
 
       <Section n="02" title="Why we hold it">
@@ -57,7 +62,7 @@ export default function Privacy() {
 
       <Section n="03" title="Who else it reaches">
         <p>
-          Three processors, each doing one job:
+          Four processors, each doing one job:
         </p>
         <Bullets
           items={[
@@ -73,6 +78,12 @@ export default function Privacy() {
               <strong className="font-semibold text-ink">Groq</strong> — the model provider that
               performs the rewriting. The text of your profile and the job description is sent for
               each recast. It is not used to train models.
+            </>,
+            <>
+              <strong className="font-semibold text-ink">Vercel</strong> — hosting, and page-view
+              analytics so we know which parts of Recast get used. The analytics are cookieless:
+              they record the page, the referrer and the browser type, tied to a hash that changes
+              daily. No name, no email, and nothing you upload.
             </>,
           ]}
         />
