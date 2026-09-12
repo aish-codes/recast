@@ -17,7 +17,11 @@ import { SUPABASE_ANON_KEY, SUPABASE_URL, supabaseConfigured } from "@/lib/supab
 // With Supabase unconfigured (local dev) everything is open, which matches the
 // API.
 
-const PUBLIC = ["/login", "/auth"];
+// Reachable signed out. /auth is the OAuth callback, and the two policy pages
+// are linked from the footer of every page including the landing one — gating
+// them behind a login is both wrong and circular, since the login page is where
+// the links promise to explain what signing in agrees to.
+const PUBLIC = ["/login", "/auth", "/privacy", "/terms"];
 
 export async function middleware(req: NextRequest) {
   if (!supabaseConfigured) return NextResponse.next();
@@ -38,12 +42,22 @@ export async function middleware(req: NextRequest) {
     },
   });
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
   const { pathname } = req.nextUrl;
   const isPublic = PUBLIC.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+
+  // A throw here is a 500 on *every* page, the login screen included, because
+  // the matcher below covers all of them — so a Supabase blip or a malformed
+  // URL takes the whole site down rather than one request with it. Treat a
+  // failed lookup as "not signed in": the pages it guards fetch through the
+  // Python API, which verifies the same JWT itself and answers 401, so falling
+  // back to the login redirect loses nothing and stays fail-closed.
+  const user = await supabase.auth
+    .getUser()
+    .then(({ data }) => data.user)
+    .catch((err) => {
+      console.error("[middleware] could not reach Supabase to verify the session:", err);
+      return null;
+    });
 
   if (!user && !isPublic) {
     const url = req.nextUrl.clone();

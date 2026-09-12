@@ -100,6 +100,12 @@ export type Application = {
   keyword_coverage: number | null;
 };
 
+/** Home-screen counts. Scoped to the signed-in user, like everything else. */
+export type Stats = {
+  /** Resumes the pipeline has produced for this account. */
+  recasted: number;
+};
+
 export type Ats = {
   keyword_coverage: number;
   keyword_hits: string[];

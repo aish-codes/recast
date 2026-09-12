@@ -202,6 +202,17 @@ class PgStore:
         with self._conn() as c:
             c.execute("delete from applications where user_id=%s and job_id=%s", (user, job_id))
 
+    def count_resumes(self, user: str) -> int:
+        # `resume is not null` is the definition of "recast": the column is
+        # filled by save_resume and by nothing else, so the count is of resumes
+        # the pipeline actually produced rather than of job descriptions pasted.
+        with self._conn() as c:
+            row = c.execute(
+                "select count(*) from applications where user_id=%s and resume is not null",
+                (user,),
+            ).fetchone()
+        return int(row[0]) if row else 0
+
     # --- analyses ------------------------------------------------------------
 
     def save_analysis(self, analysis: Analysis, user: str) -> None:

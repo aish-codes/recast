@@ -9,8 +9,10 @@
  * unauthenticated request here.
  */
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { getSupabase } from "@/lib/supabase/client";
+import { SiteFooter } from "@/components/SiteFooter";
 import {
   IconArrowRight,
   IconBrackets,
@@ -111,7 +113,15 @@ export default function Landing() {
         style={{ background: "rgba(255,255,255,.86)", backdropFilter: "blur(8px)" }}
       >
         <div className="wrap flex h-[72px] items-center justify-between gap-8">
-          <span className="text-xl font-[640] tracking-[-0.03em]">recast</span>
+          {/* Home, from the landing page too: signed in, "/" is the dashboard;
+              signed out, the middleware lands you back here. */}
+          <Link
+            href="/"
+            aria-label="Recast home"
+            className="text-xl font-[640] tracking-[-0.03em] text-ink"
+          >
+            recast
+          </Link>
           <nav className="hidden items-center gap-7 md:flex">
             <a className="navlink" href="#how">
               How it works
@@ -119,8 +129,11 @@ export default function Landing() {
             <a className="navlink" href="#why">
               Why Recast
             </a>
+            {/* The trust section further down, not the policy page — those are
+                two different promises and one label cannot mean both. The
+                policy itself is in the footer, where it is on every screen. */}
             <a className="navlink" href="#privacy">
-              Privacy
+              Your data
             </a>
           </nav>
           <button className="btn btn-google" onClick={signIn} disabled={busy}>
@@ -434,23 +447,14 @@ export default function Landing() {
       </section>
 
       {/* ── footer ──────────────────────────────────────────────────────── */}
-      <footer className="border-t border-line bg-surface py-8">
-        <div className="wrap flex flex-wrap items-center justify-between gap-6">
-          <span className="text-[15px] font-[640] tracking-[-0.03em]">recast</span>
-          <div className="flex items-center gap-6">
-            <a className="navlink" href="#privacy">
-              Privacy
-            </a>
-            <a className="navlink" href="#how">
-              How it works
-            </a>
-            <a className="navlink" href="#why">
-              Why Recast
-            </a>
-          </div>
-          <span className="text-[12.5px] text-muted">© {new Date().getFullYear()} Recast</span>
-        </div>
-      </footer>
+      <SiteFooter>
+        <a className="navlink" href="#how">
+          How it works
+        </a>
+        <a className="navlink" href="#why">
+          Why Recast
+        </a>
+      </SiteFooter>
     </div>
   );
 }

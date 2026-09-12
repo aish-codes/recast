@@ -77,6 +77,11 @@ class FileStore:
 
         shutil.rmtree(self.root / job_id, ignore_errors=True)
 
+    def count_resumes(self, user: str = "") -> int:
+        if not self.root.exists():
+            return 0
+        return sum(1 for d in self.root.iterdir() if (d / "resume.json").is_file())
+
     def save_analysis(self, analysis: Analysis, user: str = "") -> None:
         self._write(analysis.job_id, "analysis.json", analysis)
 

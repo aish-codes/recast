@@ -7,11 +7,17 @@
  * bar with a raised "tailor" action on mobile. The design's Resume Library and
  * Settings entries are deliberately absent — there is no API behind either, and
  * a nav item that goes nowhere is worse than one that isn't there.
+ *
+ * Home is reachable from three places on every screen: the wordmark, the Home
+ * nav item, and the Home tab on mobile. All of them are <Link>s, so getting
+ * back to the dashboard is a client-side transition — no reload, nothing
+ * refetched, and the session cookie never touched.
  */
 
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { AppFooter } from "./SiteFooter";
 import { initials, profileBullets, useProfile } from "./useProfile";
 import { signOut, useSession, type Account } from "./useSession";
 import {
@@ -103,20 +109,29 @@ export default function AppShell({
   const { account } = useSession();
   const displayName = profile?.contact.name ?? account?.name ?? null;
 
-  const active: NavKey = pathname.startsWith("/tailor")
+  // "home" is an exact match, not the fallthrough it used to be — otherwise any
+  // page outside the four below (the policy pages, reached from the footer)
+  // lights up the Home tab while sitting somewhere else entirely.
+  const active: NavKey | null = pathname.startsWith("/tailor")
     ? "tailor"
     : pathname.startsWith("/applications") || pathname.startsWith("/a/")
       ? "apps"
       : pathname.startsWith("/profile")
         ? "profile"
-        : "home";
+        : pathname === "/"
+          ? "home"
+          : null;
 
   return (
     <div className="flex h-screen overflow-hidden">
       {/* ── sidebar (desktop) ───────────────────────────────────────────── */}
       <aside className="hidden w-[232px] flex-none flex-col border-r border-line bg-surface lg:flex">
         <div className="flex h-16 items-center border-b border-line px-[18px]">
-          <Link href="/" className="text-[18px] font-[640] tracking-[-0.03em] text-ink">
+          <Link
+            href="/"
+            aria-label="Recast home"
+            className="text-[18px] font-[640] tracking-[-0.03em] text-ink"
+          >
             recast
           </Link>
         </div>
@@ -185,7 +200,11 @@ export default function AppShell({
         <header
           className={`h-14 flex-none items-center justify-between border-b border-line bg-surface px-[18px] lg:hidden ${bareMobileHeader ? "hidden" : "flex"}`}
         >
-          <Link href="/" className="text-[17px] font-[640] tracking-[-0.03em] text-ink">
+          <Link
+            href="/"
+            aria-label="Recast home"
+            className="text-[17px] font-[640] tracking-[-0.03em] text-ink"
+          >
             recast
           </Link>
           <div className="flex items-center gap-1.5">
@@ -206,6 +225,12 @@ export default function AppShell({
         </header>
 
         {children}
+
+        {/* Privacy and Terms, on every screen of the app. Follows the header's
+            lead on mobile: the editor is tight enough there that a second bar
+            costs more than the links are worth, and the tab bar below still
+            reaches Home. */}
+        <AppFooter className={bareMobileHeader ? "hidden lg:flex" : "flex"} />
 
         {/* mobile bottom tabs */}
         <nav className="flex flex-none items-stretch border-t border-line bg-surface px-1.5 pt-1 pb-2.5 lg:hidden">

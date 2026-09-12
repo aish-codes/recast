@@ -110,6 +110,20 @@ def health(user: CurrentUser) -> dict:
     }
 
 
+@api.get("/stats")
+def stats(user: CurrentUser) -> dict:
+    """Counts for the home screen.
+
+    Scoped to the caller, like every other route here — the store's isolation is
+    the user id on the query, and a global figure would have to step outside it.
+    `recasted` counts resumes the pipeline actually produced, which is not the
+    same as applications started — a job description can be pasted and left
+    alone. One count query rather than a list-and-len, so the home screen does
+    not pull every stored resume across the wire to size an array.
+    """
+    return {"recasted": store.count_resumes(user=user)}
+
+
 @api.get("/profile")
 def get_profile(user: CurrentUser) -> MasterProfile:
     return _profile(user)

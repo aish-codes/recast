@@ -3,15 +3,18 @@
 /**
  * Home — the dashboard from App.dc.html (screen 5, "isHome").
  *
- * Where the job search stands: four counts, the pipeline as a clickable strip,
- * and the most recent applications. Day one has none of that, so it shows the
- * empty state from States.dc.html instead of four zeroes.
+ * Where the job search stands: the running total of resumes recast, four
+ * counts, the pipeline as a clickable strip, and the most recent applications.
+ * Day one has none of the latter, so it shows the empty state from
+ * States.dc.html instead of four zeroes — the running total stays either way,
+ * because "none yet" is the answer to a question worth asking on day one too.
  */
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import AppShell from "@/components/AppShell";
 import ApplicationsTable from "@/components/ApplicationsTable";
+import RecastCount from "@/components/RecastCount";
 import {
   IconArrowRight,
   IconCalendar,
@@ -110,6 +113,10 @@ export default function Home() {
               {error}
             </div>
           )}
+
+          {/* Above the fork below, so the running total is on the page whether
+              or not there are applications to show under it. */}
+          <RecastCount />
 
           {apps === null && !error && (
             <p className="mt-8 text-[13px] text-muted">Loading…</p>

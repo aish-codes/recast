@@ -27,6 +27,7 @@ __all__ = [
     "save_job", "load_job", "save_resume", "load_resume",
     "save_cover_letter", "load_cover_letter",
     "save_application", "load_application", "list_applications", "delete_application",
+    "count_resumes",
     "save_profile", "load_profile", "ProtectedProfile",
     "save_analysis", "load_analysis", "find_analysis",
 ]
@@ -98,6 +99,11 @@ def list_applications(root: Path | None = None, user: str = DEFAULT_USER) -> lis
 def delete_application(job_id: str, root: Path | None = None,
                        user: str = DEFAULT_USER) -> None:
     backend(root).delete_application(job_id, user)
+
+
+def count_resumes(root: Path | None = None, user: str = DEFAULT_USER) -> int:
+    """How many resumes this user has had recast."""
+    return backend(root).count_resumes(user)
 
 
 def save_analysis(analysis: Analysis, root: Path | None = None,

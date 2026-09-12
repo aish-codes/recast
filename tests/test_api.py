@@ -157,6 +157,31 @@ def test_no_supabase_configured_means_open(client):
     assert client.get("/profile").status_code == 200
 
 
+# --- counts ------------------------------------------------------------------
+
+
+def test_stats_start_at_zero(client):
+    """Day one is a real state, and the home screen renders it."""
+    assert client.get("/stats").json() == {"recasted": 0}
+
+
+def test_stats_count_resumes_not_applications(client, seeded, tmp_path):
+    """The two diverge the moment a job is saved without the pipeline running."""
+    assert client.get("/stats").json()["recasted"] == 1
+
+    jd = JobDescription(raw="a role nobody finished", company="Beta").ensure_id()
+    store.save_job(jd, tmp_path)
+    store.save_application(store.Application(job_id=jd.id, company="Beta"), tmp_path)
+
+    assert len(client.get("/applications").json()) == 2
+    assert client.get("/stats").json()["recasted"] == 1
+
+
+def test_deleting_an_application_takes_it_out_of_the_count(client, seeded):
+    assert client.delete(f"/applications/{seeded}").status_code == 200
+    assert client.get("/stats").json()["recasted"] == 0
+
+
 # --- the editor round trip ---------------------------------------------------
 
 

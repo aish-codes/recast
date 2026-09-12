@@ -74,10 +74,23 @@ function release(url: string) {
   setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
 
-import type { Analysis, Application, Ats, CoverLetter, Job, ParseResult, Profile, Resume } from "./types";
+import type {
+  Analysis,
+  Application,
+  Ats,
+  CoverLetter,
+  Job,
+  ParseResult,
+  Profile,
+  Resume,
+  Stats,
+} from "./types";
 
 export const api = {
   applications: () => req<Application[]>("/applications"),
+
+  /** Home-screen counts, straight off a count query rather than a list length. */
+  stats: () => req<Stats>("/stats"),
 
   profile: () => req<Profile>("/profile"),
 
