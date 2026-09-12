@@ -13,7 +13,7 @@ from ..models.analysis import Analysis
 from ..models.job import JobDescription
 from ..models.profile import MasterProfile
 from ..models.tailored import CoverLetter, TailoredResume
-from .base import Application
+from .base import Application, Totals
 
 
 class FileStore:
@@ -81,6 +81,12 @@ class FileStore:
         if not self.root.exists():
             return 0
         return sum(1 for d in self.root.iterdir() if (d / "resume.json").is_file())
+
+    def totals(self) -> Totals:
+        # One person owns a file store, and they count once they have started
+        # anything — the profile lives at a path of their choosing, so it cannot
+        # be the signal here.
+        return Totals(users=1 if self.list_applications() else 0, recasted=self.count_resumes())
 
     def save_analysis(self, analysis: Analysis, user: str = "") -> None:
         self._write(analysis.job_id, "analysis.json", analysis)

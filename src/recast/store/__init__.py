@@ -18,16 +18,16 @@ from ..models.analysis import Analysis
 from ..models.job import JobDescription
 from ..models.profile import MasterProfile
 from ..models.tailored import CoverLetter, TailoredResume
-from .base import DEFAULT_USER, Application, Status, Store
+from .base import DEFAULT_USER, Application, Status, Store, Totals
 from .files import FileStore
 
 __all__ = [
-    "Application", "Status", "Store", "FileStore", "DEFAULT_USER", "OUT_DIR",
+    "Application", "Status", "Store", "Totals", "FileStore", "DEFAULT_USER", "OUT_DIR",
     "app_dir", "backend", "using_postgres",
     "save_job", "load_job", "save_resume", "load_resume",
     "save_cover_letter", "load_cover_letter",
     "save_application", "load_application", "list_applications", "delete_application",
-    "count_resumes",
+    "count_resumes", "totals",
     "save_profile", "load_profile", "ProtectedProfile",
     "save_analysis", "load_analysis", "find_analysis",
 ]
@@ -104,6 +104,11 @@ def delete_application(job_id: str, root: Path | None = None,
 def count_resumes(root: Path | None = None, user: str = DEFAULT_USER) -> int:
     """How many resumes this user has had recast."""
     return backend(root).count_resumes(user)
+
+
+def totals(root: Path | None = None) -> Totals:
+    """Site-wide counts for the landing page. No user: see Totals."""
+    return backend(root).totals()
 
 
 def save_analysis(analysis: Analysis, root: Path | None = None,

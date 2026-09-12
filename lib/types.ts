@@ -106,6 +106,14 @@ export type Stats = {
   recasted: number;
 };
 
+/** Landing-page counts. Site-wide — the one thing the API says to a signed-out visitor. */
+export type Totals = {
+  /** Accounts that have signed in at least once. */
+  users: number;
+  /** Resumes the pipeline has produced, across all of them. */
+  recasted: number;
+};
+
 export type Ats = {
   keyword_coverage: number;
   keyword_hits: string[];

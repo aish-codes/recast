@@ -12,6 +12,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { getSupabase } from "@/lib/supabase/client";
+import LandingTotals from "@/components/LandingTotals";
 import { SiteFooter } from "@/components/SiteFooter";
 import {
   IconArrowRight,
@@ -263,6 +264,9 @@ export default function Landing() {
           </div>
         </div>
       </section>
+
+      {/* ── the numbers ─────────────────────────────────────────────────── */}
+      <LandingTotals />
 
       {/* ── how it works ────────────────────────────────────────────────── */}
       <section id="how" className="border-y border-line bg-surface py-16 lg:py-24">

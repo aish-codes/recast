@@ -54,6 +54,20 @@ class Application(BaseModel):
         return self
 
 
+class Totals(BaseModel):
+    """The two figures on the landing page, across every account.
+
+    The only cross-user read in the store. Everything else takes a user id and
+    stays inside it; this deliberately does not, because the numbers are the
+    service's own — how many people have signed up, how many resumes it has
+    produced — and are shown to people who have not signed in. Aggregates only:
+    nothing here can be traced to a row.
+    """
+
+    users: int
+    recasted: int
+
+
 class Store(Protocol):
     def save_job(self, jd: JobDescription, user: str) -> None: ...
     def load_job(self, job_id: str, user: str) -> JobDescription: ...
@@ -73,6 +87,9 @@ class Store(Protocol):
     # list_applications() result, because on Postgres that would mean shipping
     # every stored resume across the wire to look at whether it is null.
     def count_resumes(self, user: str) -> int: ...
+
+    # Site-wide, and the one method here without a user parameter — see Totals.
+    def totals(self) -> Totals: ...
     def save_profile(self, profile: MasterProfile, user: str) -> None: ...
     def load_profile(self, user: str) -> MasterProfile | None: ...
 

@@ -124,6 +124,24 @@ def stats(user: CurrentUser) -> dict:
     return {"recasted": store.count_resumes(user=user)}
 
 
+@api.get("/totals")
+def totals(response: Response) -> store.Totals:
+    """The two figures on the landing page: accounts, and resumes recast.
+
+    No `user: CurrentUser` — the only route here without one, on purpose. This is
+    shown to people deciding whether to sign in, so it has to answer before they
+    have. It gives back two integers about the service as a whole and nothing
+    about anyone in particular, which is why an open route is acceptable where
+    it would be unthinkable for anything else in this file.
+
+    Cached at the edge for a minute: a landing-page hit should not be two count
+    queries against the database, and a number that is sixty seconds stale is
+    still the number.
+    """
+    response.headers["Cache-Control"] = "public, s-maxage=60, stale-while-revalidate=600"
+    return store.totals()
+
+
 @api.get("/profile")
 def get_profile(user: CurrentUser) -> MasterProfile:
     return _profile(user)

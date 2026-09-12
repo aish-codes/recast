@@ -182,6 +182,27 @@ def test_deleting_an_application_takes_it_out_of_the_count(client, seeded):
     assert client.get("/stats").json()["recasted"] == 0
 
 
+def test_totals_start_at_zero(client):
+    assert client.get("/totals").json() == {"users": 0, "recasted": 0}
+
+
+def test_totals_count_the_store(client, seeded):
+    assert client.get("/totals").json() == {"users": 1, "recasted": 1}
+
+
+def test_totals_are_public_but_stats_are_not(client, signed_in):
+    """The landing page reads /totals before anyone has signed in.
+
+    Same gate, same request, no token: the per-user count is refused and the
+    site-wide one is not. Asserted together so the two cannot drift — a future
+    edit that closes /totals or opens /stats fails this test either way.
+    """
+    assert client.get("/stats").status_code == 401
+    res = client.get("/totals")
+    assert res.status_code == 200
+    assert res.headers["cache-control"].startswith("public")
+
+
 # --- the editor round trip ---------------------------------------------------
 
 

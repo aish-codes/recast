@@ -19,7 +19,7 @@ from ..models.analysis import Analysis
 from ..models.job import JobDescription
 from ..models.profile import MasterProfile
 from ..models.tailored import CoverLetter, TailoredResume
-from .base import Application
+from .base import Application, Totals
 
 
 def _jsonb(model):
@@ -212,6 +212,26 @@ class PgStore:
                 (user,),
             ).fetchone()
         return int(row[0]) if row else 0
+
+    def totals(self) -> Totals:
+        # Accounts live in auth.users, Supabase's table rather than ours. The
+        # function connects as `postgres`, which can read it — the same role the
+        # dashboard's SQL editor uses. A plain Postgres has no auth schema, so
+        # to_regclass() (null rather than an error, which would poison the
+        # transaction) decides whether to ask it or to count the ids that have
+        # written something of their own instead.
+        with self._conn() as c:
+            recasted = c.execute(
+                "select count(*) from applications where resume is not null"
+            ).fetchone()[0]
+            if c.execute("select to_regclass('auth.users')").fetchone()[0]:
+                users = c.execute("select count(*) from auth.users").fetchone()[0]
+            else:
+                users = c.execute(
+                    "select count(*) from "
+                    "(select user_id from profiles union select user_id from applications) u"
+                ).fetchone()[0]
+        return Totals(users=int(users), recasted=int(recasted))
 
     # --- analyses ------------------------------------------------------------
 

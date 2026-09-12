@@ -84,6 +84,7 @@ import type {
   Profile,
   Resume,
   Stats,
+  Totals,
 } from "./types";
 
 export const api = {
@@ -91,6 +92,9 @@ export const api = {
 
   /** Home-screen counts, straight off a count query rather than a list length. */
   stats: () => req<Stats>("/stats"),
+
+  /** Landing-page counts. Public: the route takes no token, though one is sent if a session exists. */
+  totals: () => req<Totals>("/totals"),
 
   profile: () => req<Profile>("/profile"),
 
